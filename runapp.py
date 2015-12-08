@@ -5,8 +5,16 @@ import web
 urls = (
   "/", "index"
 )
+app = web.application(urls, globals())
+render = web.template.render("templates/")
 
 class index:
+  def GET(self):
+    return render.layout(
+      render.index()
+    )
+
+
   def POST(self):
     data = json.loads(web.data())
     print data
@@ -14,5 +22,4 @@ class index:
 
 
 if __name__ == "__main__":
-  app = web.application(urls, globals())
   app.run()
