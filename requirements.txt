@@ -1,2 +1,2 @@
-webpy
+web.py==0.37
 
