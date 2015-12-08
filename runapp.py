@@ -11,6 +11,7 @@ class index:
   def POST(self):
     data = json.loads(web.data())
     print data
+    return ""
 
 
 if __name__ == "__main__":
