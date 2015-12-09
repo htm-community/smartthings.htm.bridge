@@ -1,2 +1,3 @@
 web.py==0.37
-
+influxdb==2.10.0
+requests==2.8.1

@@ -2,6 +2,9 @@ import json
 
 import web
 
+from persist import saveSmartThingDataPoint
+
+
 urls = (
   "/", "index"
 )
@@ -17,7 +20,7 @@ class index:
 
   def POST(self):
     data = json.loads(web.data())
-    print data
+    saveSmartThingDataPoint(data)
     return json.dumps({"result": "success"})
 
 
