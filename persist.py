@@ -35,7 +35,7 @@ def saveSmartThingDataPoint(point):
     "time": point["time"],
     "measurement": point["stream"],
     "fields": {
-      "value": point["value"]
+      "value": float(point["value"])
     }
   }]
 
