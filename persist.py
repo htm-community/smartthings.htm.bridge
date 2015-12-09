@@ -39,6 +39,9 @@ def saveSmartThingDataPoint(point):
     }
   }]
 
+  import pprint
+  pprint.pprint(payload)
+
   client.write_points(payload)
 
 
