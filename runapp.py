@@ -5,7 +5,7 @@ import urllib
 
 import web
 
-from persist import saveSmartThingDataPoint
+from persist import saveSmartThingDataPoint, saveHtmResult
 from htmclient import listModels, createModel, sendData
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -33,8 +33,7 @@ def runOneDataPoint(modelId, point):
     "c0": timestamp,
     "c1": point["value"]
   }
-  result = sendData(modelId, dataRow)
-  print result
+  return sendData(modelId, dataRow)
 
 
 class index:
@@ -59,7 +58,8 @@ class index:
       createModelFromDataPoint(modelId, data)
     else:
       print "running data through existing model"
-      runOneDataPoint(modelId, data)
+      htmResult = runOneDataPoint(modelId, data)
+      saveHtmResult(htmResult, data)
     return json.dumps({"result": "success"})
 
 
