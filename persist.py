@@ -28,7 +28,6 @@ client = InfluxDBClient(
 
 def saveSmartThingDataPoint(point):
   print "Saving ST point"
-  print point
   payload = [{
     "tags": {
       "component": point["component"]
@@ -39,17 +38,17 @@ def saveSmartThingDataPoint(point):
       "value": float(point["value"])
     }
   }]
+  print payload
   client.write_points(payload)
 
 
 def saveHtmResult(result, point):
   print "Saving HTM result"
-  print result
   anomalyScore = result["inferences"]["anomalyScore"]
   anomalyLikelihood = result["anomalyLikelihood"]
   payload = [{
     "tags": {
-      "component": point["component"]
+      "component": point["component"] + '-htm'
     },
     "time": point["time"],
     "measurement": point["stream"],
@@ -58,4 +57,5 @@ def saveHtmResult(result, point):
       "anomalyLikelihood": anomalyLikelihood
     }
   }]
+  print payload
   client.write_points(payload)
