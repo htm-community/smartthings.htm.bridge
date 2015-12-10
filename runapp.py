@@ -50,10 +50,15 @@ class index:
     saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
     modelId = urllib.quote_plus(data["component"])
-
+    print "Existing models:"
+    print modelIds
+    print "current model id:"
+    print modelId
     if modelId not in modelIds:
+      print "creating new one"
       createModelFromDataPoint(modelId, data)
     else:
+      print "running data through existing model"
       runOneDataPoint(modelId, data)
     return json.dumps({"result": "success"})
 
