@@ -49,15 +49,9 @@ class index:
     saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
     modelId = data["component"]
-    print "Existing models:"
-    print modelIds
-    print "current model id:"
-    print modelId
     if modelId not in modelIds:
-      print "creating new one"
       createModelFromDataPoint(modelId, data)
     else:
-      print "running data through existing model"
       htmResult = runOneDataPoint(modelId, data)
       saveHtmResult(htmResult, data)
     return json.dumps({"result": "success"})
