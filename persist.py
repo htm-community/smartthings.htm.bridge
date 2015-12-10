@@ -37,7 +37,7 @@ def saveResult(result, point):
     "time": point["time"],
     "measurement": point["stream"],
     "fields": {
-      "value": float(point["value"])
+      "value": float(point["value"]),
       "anomalyScore": anomalyScore,
       "anomalyLikelihood": anomalyLikelihood
     }
