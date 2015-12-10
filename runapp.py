@@ -49,7 +49,7 @@ class index:
     data = json.loads(web.data())
     saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
-    modelId = urllib.quote_plus(data["component"])
+    modelId = urllib.urlencode(data["component"])
     print "Existing models:"
     print modelIds
     print "current model id:"
