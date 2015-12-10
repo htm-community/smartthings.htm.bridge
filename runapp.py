@@ -18,18 +18,15 @@ app = web.application(urls, globals())
 render = web.template.render("templates/")
 
 
-def createModelFromDataPoint(point):
-  guid = urllib.quote_plus(point["component"])
+def createModelFromDataPoint(modelId, point):
   with open("anomaly_params.json") as inputParams:
     modelSpec = json.loads(inputParams.read())
-  modelSpec["guid"] = guid
+  modelSpec["guid"] = modelId
   createdModel = createModel(json.dumps(modelSpec))
   print "Created {0}".format(createdModel)
 
 
-def runOneDataPoint(point):
-  print point
-  modelId = point["component"]
+def runOneDataPoint(modelId, point):
   timeString = point["time"]
   timestamp = int(time.mktime(datetime.strptime(timeString, DATE_FORMAT).timetuple()))
   dataRow = {
@@ -52,10 +49,12 @@ class index:
     data = json.loads(web.data())
     saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
-    if data["component"] not in modelIds:
-      createModelFromDataPoint(data)
+    modelId = urllib.quote_plus(data["component"])
+
+    if modelId not in modelIds:
+      createModelFromDataPoint(modelId, data)
     else:
-      runOneDataPoint(data)
+      runOneDataPoint(modelId, data)
     return json.dumps({"result": "success"})
 
 
