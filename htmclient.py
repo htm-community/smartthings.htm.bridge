@@ -1,7 +1,8 @@
 import json
 import requests
 
-URL = "http://localhost:5000/"
+# URL = "http://localhost:5000/"
+URL = "https://htm-over-http.herokuapp.com/"
 
 def post(url, params=None):
     return requests.post(URL+url, data=params)
