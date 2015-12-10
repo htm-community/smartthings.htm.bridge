@@ -1,6 +1,7 @@
 import json
 import time
 from datetime import datetime
+import urllib
 
 import web
 
@@ -18,7 +19,7 @@ render = web.template.render("templates/")
 
 
 def createModelFromDataPoint(point):
-  guid = point["component"]
+  guid = urllib.quote_plus(point["component"])
   with open("anomaly_params.json") as inputParams:
     modelSpec = json.loads(inputParams.read())
   modelSpec["guid"] = guid
