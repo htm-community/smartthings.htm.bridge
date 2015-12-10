@@ -46,14 +46,14 @@ class index:
 
   def POST(self):
     data = json.loads(web.data())
-    saveSmartThingDataPoint(data)
+    # saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
     modelId = data["component"] + '_' +  data["stream"]
     if modelId not in modelIds:
       createModelFromDataPoint(modelId, data)
     else:
       htmResult = runOneDataPoint(modelId, data)
-      saveHtmResult(htmResult, data)
+      saveResult(htmResult, data)
     return json.dumps({"result": "success"})
 
 
