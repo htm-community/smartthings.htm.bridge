@@ -48,7 +48,7 @@ class index:
     data = json.loads(web.data())
     saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
-    modelId = data["component"]
+    modelId = data["component"] + '_' +  data["stream"]
     if modelId not in modelIds:
       createModelFromDataPoint(modelId, data)
     else:
