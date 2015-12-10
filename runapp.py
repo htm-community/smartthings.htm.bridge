@@ -5,7 +5,7 @@ import urllib
 
 import web
 
-from persist import saveSmartThingDataPoint, saveHtmResult
+from persist import saveResult
 from htmclient import listModels, createModel, sendData
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
