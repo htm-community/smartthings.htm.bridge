@@ -32,7 +32,7 @@ def saveResult(result, point):
   anomalyLikelihood = result["anomalyLikelihood"]
   payload = [{
     "tags": {
-      "component": point["component"]'
+      "component": point["component"]
     },
     "time": point["time"],
     "measurement": point["stream"],
