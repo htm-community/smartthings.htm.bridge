@@ -44,3 +44,13 @@ def saveResult(result, point):
   }]
   print payload
   client.write_points(payload)
+
+
+def listSensors():
+  return client.get_list_series()
+
+
+def getSensorData(measurement, component):
+  return client.query(
+    "select * from " + measurement + " where component = '" + component + "'"
+  )

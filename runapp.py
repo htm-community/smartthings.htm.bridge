@@ -5,14 +5,16 @@ import urllib
 
 import web
 
-from persist import saveResult
+from influxclient import saveResult, listSensors, getSensorData
 from htmclient import listModels, createModel, sendData
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
 
 urls = (
-  "/", "index"
+  "/", "index",
+  "/_sensors", "sensors",
+  "/_sensor/(.+)/(.+)", "sensor",
 )
 app = web.application(urls, globals())
 render = web.template.render("templates/")
@@ -56,6 +58,22 @@ class index:
       saveResult(htmResult, data)
     return json.dumps({"result": "success"})
 
+
+class sensors:
+  def GET(self):
+    sensors = listSensors()
+    sensorIds = []
+    for sensor in sensors:
+      name = sensor["name"]
+      for tag in sensor["tags"]:
+        sensorIds.append(name + "/" + tag["component"])
+    return json.dumps(sensorIds)
+
+
+class sensor:
+  def GET(self, measurement, component):
+    sensor = getSensorData(measurement, component)
+    return json.dumps(sensor.raw)
 
 
 if __name__ == "__main__":
