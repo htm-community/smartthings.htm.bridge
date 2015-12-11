@@ -15,6 +15,7 @@ urls = (
   "/", "index",
   "/_sensors", "sensors",
   "/_sensor/(.+)/(.+)", "sensor",
+  "/foshizzle", "charts"
 )
 app = web.application(urls, globals())
 render = web.template.render("templates/")
@@ -74,6 +75,11 @@ class sensor:
   def GET(self, measurement, component):
     sensor = getSensorData(measurement, component)
     return json.dumps(sensor.raw)
+
+
+class charts:
+  def GET(self):
+    return render.layout(render.charts())
 
 
 if __name__ == "__main__":

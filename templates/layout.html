@@ -24,21 +24,18 @@ $def with (content)
   </head>
   <body>
 
-  <div class="container">
-    $:content
-  </div>
-
   <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
   <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
   <!-- Include all compiled plugins (below), or include individual files as needed -->
   <script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+  <!-- Lodash -->
+  <script src="/static/bower_components/lodash/lodash.min.js"></script>
 
-  <!-- Program code -->
 
-  <footer>
-    hello, footer!
-  </footer>
-  
+  <div class="container">
+    $:content
+  </div>
+
   </body>
 </html>
 
