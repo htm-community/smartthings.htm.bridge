@@ -62,6 +62,11 @@ $(function() {
                 axis: 'y2',
                 color: 'red'
               }
+            },
+            axes: {
+              y2: {
+                valueRange: [0.0, 1.0]
+              }
             }
         });
     }
