@@ -1,18 +1,42 @@
 $(function() {
 
-    $chartContainer = $('#chart-container')
+    var $chartContainer = $('#chart-container')
+
+    function removeStringData(data) {
+        var stringColumns = ['component', 'timezone'];
+        var doomedIndexes = [];
+        var series = data.series[0];
+        _.each(series.columns, function(name, index) {
+            if (_.contains(stringColumns, name)) {
+                doomedIndexes.push(index);
+            }
+        });
+        // Now that we know which indexes are doomed, we reverse the order so we
+        // can extract them from the list from the end
+        doomedIndexes = doomedIndexes.reverse();
+        _.each(doomedIndexes, function(doomed) {
+            series.columns.splice(doomed, 1);
+        });
+        _.each(series.values, function(row) {
+            _.each(doomedIndexes, function(doomed) {
+                row.splice(doomed, 1);
+            });
+        });
+    }
 
     function convertJsonDataToCsv(data) {
         var rows = [];
         var series = data.series[0];
-        series.columns.splice(3, 1);
+
         var headers = series.columns;
         var values = series.values;
+        
         rows.push(headers);
+        
         _.each(values, function(values) {
-            values.splice(3, 1);
             rows.push(values.join(','));
         });
+        
         return rows.join('\n');
     }
 
@@ -25,6 +49,7 @@ $(function() {
 
     function renderChart(id, data) {
         var el = document.getElementById(id);
+        removeStringData(data);
         var csvString = convertJsonDataToCsv(data);
         return new Dygraph(el, csvString, {
             width: 1000,

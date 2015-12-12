@@ -68,7 +68,7 @@ class sensors:
       name = sensor["name"]
       for tag in sensor["tags"]:
         sensorIds.append(name + "/" + tag["component"])
-    return json.dumps(sensorIds)
+    return json.dumps(list(set(sensorIds)))
 
 
 class sensor:
