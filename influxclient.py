@@ -6,7 +6,6 @@ from influxdb import InfluxDBClient
 # import urllib3.contrib.pyopenssl
 # urllib3.contrib.pyopenssl.inject_into_urllib3()
 
-
 INFLUX_HOST = os.environ["INFLUX_HOST"]
 INFLUX_PORT = os.environ["INFLUX_PORT"]
 INFLUX_USER = 'numenta' #os.environ["INFLUX_USER"]
@@ -30,9 +29,15 @@ def saveResult(result, point):
   print "Saving data and HTM result"
   anomalyScore = result["inferences"]["anomalyScore"]
   anomalyLikelihood = result["anomalyLikelihood"]
+
+  timezone = "unknown"
+  if "timezone" in point:
+    timezone = point["timezone"]
+
   payload = [{
     "tags": {
-      "component": point["component"]
+      "component": point["component"],
+      "timezone": timezone
     },
     "time": point["time"],
     "measurement": point["stream"],
@@ -42,7 +47,9 @@ def saveResult(result, point):
       "anomalyLikelihood": anomalyLikelihood
     }
   }]
+
   print payload
+
   client.write_points(payload)
 
 
