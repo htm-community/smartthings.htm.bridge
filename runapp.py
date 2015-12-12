@@ -54,9 +54,8 @@ class index:
     modelId = data["component"] + '_' +  data["stream"]
     if modelId not in modelIds:
       createModelFromDataPoint(modelId, data)
-    else:
-      htmResult = runOneDataPoint(modelId, data)
-      saveResult(htmResult, data)
+    htmResult = runOneDataPoint(modelId, data)
+    saveResult(htmResult, data)
     return json.dumps({"result": "success"})
 
 

@@ -29,7 +29,11 @@ def listModels():
 
 
 def sendData(modelId, point):
-    resp = put('models/' + modelId, json.dumps(point))
-    print resp
-    respJson = resp.json()
-    return respJson
+    response = put('models/' + modelId, json.dumps(point))
+    r = response.json()
+    if response.status_code == 200:
+        return r
+    else:
+        raise Exception(
+            "Could not sent data to model {0}: {1}".format(modelId, r['error'])
+        )
