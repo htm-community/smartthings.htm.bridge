@@ -51,7 +51,7 @@ def saveSensorOnly(point):
       "value": float(point["value"])
     }
   }]
-  client.write_points(payload)
+  backupClient.write_points(payload)
 
 
 def saveResult(result, point):
