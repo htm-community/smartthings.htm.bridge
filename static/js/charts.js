@@ -40,19 +40,13 @@ $(function() {
         return rows.join('\n');
     }
 
-    function prepareChartMarkup(id, name) {
-        var $header = $('<h3>' + name + '</h3>');
-        var $chart = $('<div></div>', {id: id, class: 'chart'});
-        $chartContainer.append($header)
-                       .append($chart);
-    }
-
     function renderChart(id, data) {
         var el = document.getElementById(id);
         removeStringData(data);
         var csvString = convertJsonDataToCsv(data);
         return new Dygraph(el, csvString, {
             width: 1000,
+            height: 400,
             series: {
               anomalyScore: {
                 axis: 'y2',
@@ -74,7 +68,6 @@ $(function() {
     function renderSensorChart(name, data) {
         console.log(name);
         var id = name.replace('/', '_').replace(/\+/g, '-');
-        prepareChartMarkup(id, name);
         renderChart(id, data);
     }
 

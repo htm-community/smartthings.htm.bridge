@@ -39,6 +39,16 @@ def runOneDataPoint(modelId, point):
   return sendData(modelId, dataRow)
 
 
+def getSensorIds(sensors):
+  sensorIds = []
+  for sensor in sensors:
+    name = sensor["name"]
+    for tag in sensor["tags"]:
+      sensorIds.append(name + "/" + tag["component"])
+  return list(set(sensorIds))
+
+
+
 class index:
 
   def GET(self):
@@ -61,13 +71,7 @@ class index:
 
 class sensors:
   def GET(self):
-    sensors = listSensors()
-    sensorIds = []
-    for sensor in sensors:
-      name = sensor["name"]
-      for tag in sensor["tags"]:
-        sensorIds.append(name + "/" + tag["component"])
-    return json.dumps(list(set(sensorIds)))
+    return json.dumps(getSensorIds(listSensors()))
 
 
 class sensor:
@@ -78,7 +82,12 @@ class sensor:
 
 class charts:
   def GET(self):
-    return render.layout(render.charts())
+    # .replace('/', '_').replace(/\+/g, '-')
+    sensorIds = [
+      s.replace("/", "_").replace("+", "-") 
+      for s in getSensorIds(listSensors())
+    ]
+    return render.layout(render.charts(sensorIds))
 
 
 if __name__ == "__main__":
