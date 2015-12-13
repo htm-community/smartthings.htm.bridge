@@ -11,6 +11,7 @@ INFLUX_PORT = os.environ["INFLUX_PORT"]
 INFLUX_USER = 'numenta' #os.environ["INFLUX_USER"]
 INFLUX_PASS = 'PWXucoyNe7n8' #os.environ["INFLUX_PASS"]
 INFLUX_DB = "smartthings"
+INFLUX_DB_BACKUP = "smartthings_sensor_only"
 
 print("Connecting to {0}:{1}@{2}:{3}".format(
   INFLUX_USER, INFLUX_PASS, INFLUX_HOST, INFLUX_PORT
@@ -23,6 +24,34 @@ client = InfluxDBClient(
   database=INFLUX_DB,
   ssl=True
 )
+backupClient = InfluxDBClient(
+  host=INFLUX_HOST, 
+  port=INFLUX_PORT, 
+  username=INFLUX_USER, 
+  password=INFLUX_PASS, 
+  database=INFLUX_DB_BACKUP,
+  ssl=True
+)
+
+
+def saveSensorOnly(point):
+  print "Saving sensor only data..."
+  timezone = "unknown"
+  if "timezone" in point:
+    timezone = point["timezone"]
+
+  payload = [{
+    "tags": {
+      "component": point["component"],
+      "timezone": timezone
+    },
+    "time": point["time"],
+    "measurement": point["stream"],
+    "fields": {
+      "value": float(point["value"])
+    }
+  }]
+  client.write_points(payload)
 
 
 def saveResult(result, point):
@@ -48,8 +77,7 @@ def saveResult(result, point):
     }
   }]
 
-  print payload
-
+  saveSensorOnly(point)
   client.write_points(payload)
 
 
