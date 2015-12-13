@@ -1,6 +1,20 @@
 $(function() {
 
-    var $chartContainer = $('#chart-container')
+    var $chartContainer = $('#chart-container');
+    var charts = [];
+    var minDate, maxDate;
+
+    function updateMinMaxDates(chart) {
+        var extremes = chart.xAxisExtremes();
+        var min = extremes.shift();
+        var max = extremes.shift();
+        if (! minDate || min < minDate) {
+            minDate = min;
+        }
+        if (! maxDate || max > maxDate) {
+            maxDate = max;
+        }
+    }
 
     function removeStringData(data) {
         var stringColumns = ['component', 'timezone'];
@@ -45,7 +59,7 @@ $(function() {
         removeStringData(data);
         var csvString = convertJsonDataToCsv(data);
         var width = $('#' + id + '-container').width()
-        new Dygraph(el, csvString, {
+        return new Dygraph(el, csvString, {
             width: width,
             height: 400,
             series: {
@@ -63,11 +77,11 @@ $(function() {
               }
             },
             axes: {
-              y1: {
-                valueRange: [0.0, 1.0]
+              y2: {
+                valueRange: [0, 1.1]
               }
             },
-            legend: 'always',
+            legend: 'follow',
             labelsSeparateLines: true
         });
     }
@@ -75,14 +89,23 @@ $(function() {
     function renderSensorChart(name, data) {
         console.log(name);
         var id = name.replace('/', '_').replace(/\+/g, '-');
-        renderChart(id, data);
+        return renderChart(id, data);
     }
 
 
     $.getJSON('/_data/sensors', function(sensors) {
         _.each(sensors, function(sensorName) {
             $.getJSON('/_data/sensor/' + sensorName, function(sensorData) {
-                renderSensorChart(sensorName, sensorData);
+                var chart = renderSensorChart(sensorName, sensorData);
+                updateMinMaxDates(chart);
+                charts.push(chart);
+                if (charts.length == sensors.length) {
+                    _.each(charts, function(chart) {
+                        chart.updateOptions({
+                            dateWindow: [minDate, maxDate]
+                        });
+                    });
+                }
             });
         });
     });
