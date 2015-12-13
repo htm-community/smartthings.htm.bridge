@@ -13,13 +13,14 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 urls = (
   "/", "index",
-  "/_sensors", "sensors",
-  "/_sensor/(.+)/(.+)", "sensor",
-  "/foshizzle", "charts"
+  "/_data/sensors", "sensors",
+  "/_data/sensor/(.+)/(.+)", "sensor",
+  "/charts", "charts"
 )
 app = web.application(urls, globals())
 render = web.template.render("templates/")
 
+# Utility functions
 
 def createModelFromDataPoint(modelId, point):
   with open("anomaly_params.json") as inputParams:
@@ -45,9 +46,10 @@ def getSensorIds(sensors):
     name = sensor["name"]
     for tag in sensor["tags"]:
       sensorIds.append(name + "/" + tag["component"])
-  return list(set(sensorIds))
+  return sorted(list(set(sensorIds)))
 
 
+# HTTP Handlers
 
 class index:
 
@@ -59,7 +61,6 @@ class index:
 
   def POST(self):
     data = json.loads(web.data())
-    # saveSmartThingDataPoint(data)
     modelIds = [m["guid"] for m in listModels()]
     modelId = data["component"] + '_' +  data["stream"]
     if modelId not in modelIds:
@@ -69,18 +70,21 @@ class index:
     return json.dumps({"result": "success"})
 
 
-class sensors:
-  def GET(self):
-    return json.dumps(getSensorIds(listSensors()))
-
-
 class sensor:
+
   def GET(self, measurement, component):
     sensor = getSensorData(measurement, component)
     return json.dumps(sensor.raw)
 
 
+class sensors:
+
+  def GET(self):
+    return json.dumps(getSensorIds(listSensors()))
+
+
 class charts:
+
   def GET(self):
     # .replace('/', '_').replace(/\+/g, '-')
     sensorIds = [
@@ -89,6 +93,7 @@ class charts:
     ]
     return render.layout(render.charts(sensorIds))
 
+# Start here
 
 if __name__ == "__main__":
   app.run()

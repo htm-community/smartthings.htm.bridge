@@ -44,10 +44,15 @@ $(function() {
         var el = document.getElementById(id);
         removeStringData(data);
         var csvString = convertJsonDataToCsv(data);
-        return new Dygraph(el, csvString, {
-            width: 1000,
+        var width = $('#' + id + '-container').width()
+        new Dygraph(el, csvString, {
+            width: width,
             height: 400,
             series: {
+              value: {
+                strokeWidth: 2,
+                strokePattern: [4, 1]
+              },
               anomalyScore: {
                 axis: 'y2',
                 color: 'orange'
@@ -58,10 +63,12 @@ $(function() {
               }
             },
             axes: {
-              y2: {
+              y1: {
                 valueRange: [0.0, 1.0]
               }
-            }
+            },
+            legend: 'always',
+            labelsSeparateLines: true
         });
     }
 
@@ -72,9 +79,9 @@ $(function() {
     }
 
 
-    $.getJSON('/_sensors', function(sensors) {
+    $.getJSON('/_data/sensors', function(sensors) {
         _.each(sensors, function(sensorName) {
-            $.getJSON('/_sensor/' + sensorName, function(sensorData) {
+            $.getJSON('/_data/sensor/' + sensorName, function(sensorData) {
                 renderSensorChart(sensorName, sensorData);
             });
         });
