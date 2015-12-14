@@ -39,9 +39,10 @@ $var title: Sensor Charts
         <div class="panel panel-info" id="${name}-container">
           <div class="panel-heading">
             <h3 class="panel-title">
-                <a href="#${name}">
-                    ${name}
-                </a>
+                <a href="#${name}">${name}</a>
+                <small>
+                    <a href="/chart/${name}">(see alone)</a>
+                </small>
             </h3>
           </div>
           <div class="panel-body chart" id="${name}">
