@@ -1,0 +1,39 @@
+$def with (sensor)
+
+$var title: sensor
+
+<div class="page-header">
+  <h1>Live SmartThings Sensor Values <small>and HTM anomaly scores</small></h1>
+</div>
+
+<div class="panel panel-warning">
+    <div class="panel-heading">
+      <h2 class="panel-title" id="top">About the Charts</h2>
+    </div>
+    <div class="panel-body">
+        <p>
+            Anomaly values are plotted on the secondary Y axis on the right. Door open/close values are either <code>0</code> or <code>1</code>. I don't understand the acceleration data yet. Data is coming from a <a href="https://github.com/rhyolight/smartthings-apps/blob/master/http-poster.groovy">SmartThings app</a>. It is being send via HTTP to <a href="https://github.com/numenta/nupic">NuPIC</a> running behind a <a href="https://github.com/nupic-community/hitc">REST API</a>. Sensor values and HTM results are saved to a time-series database called <a href="https://docs.influxdata.com/influxdb/v0.9/concepts/key_concepts/">InfluxDB</a>.
+        </p>
+    </div>
+</div>
+
+<div id="chart-container">
+
+    <div class="panel panel-info" id="${sensor}-container">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+            <a href="#${sensor}">
+                ${sensor}
+            </a>
+        </h3>
+      </div>
+      <div class="panel-body chart" id="${sensor}">
+        
+      </div>
+    </div>
+
+</div>
+
+<script src="/static/bower_components/dygraphs/dygraph-combined.js"></script>
+<!-- <script src="/static/bower_components/dygraphs/extras/synchronizer.js"></script> -->
+<script src="/static/js/charts.js"></script>
