@@ -15,7 +15,8 @@ urls = (
   "/", "index",
   "/_data/sensors", "sensors",
   "/_data/sensor/(.+)/(.+)", "sensor",
-  "/charts", "charts"
+  "/charts", "charts",
+  "/chart/(.+)", "chart"
 )
 app = web.application(urls, globals())
 render = web.template.render("templates/")
@@ -92,6 +93,14 @@ class charts:
       for s in getSensorIds(listSensors())
     ]
     return render.layout(render.charts(sensorIds))
+
+
+class chart:
+
+  def GET(self, sensor):
+    return render.layout(render.chart(sensor))
+
+
 
 # Start here
 
