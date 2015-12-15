@@ -3,6 +3,8 @@ $(function() {
     var $chartContainer = $('#chart-container');
     var charts = [];
     var minDate, maxDate;
+    var MAX_ROWS_CHARTED_GROUP = 2000;
+    var MAX_ROWS_CHARTED_SINGLE = 5000;
 
     function updateMinMaxDates(chart) {
         var extremes = chart.xAxisExtremes();
@@ -86,27 +88,37 @@ $(function() {
         });
     }
 
-    function renderSensorChart(name, data) {
-        console.log(name);
-        var id = name.replace('/', '_').replace(/\+/g, '-');
+    function renderSensorChart(id, data) {
         return renderChart(id, data);
     }
 
 
     $.getJSON('/_data/sensors', function(sensors) {
+        var maxRows = MAX_ROWS_CHARTED_SINGLE;
+        var query = window.STHTMB.utils.getUrlVars();
+        if (query.limit != undefined) {
+            maxRows = query.limit;
+        } else if (window.location.href.indexOf('/charts') > -1) {
+            maxRows = MAX_ROWS_CHARTED_GROUP;
+        }
         _.each(sensors, function(sensorName) {
-            $.getJSON('/_data/sensor/' + sensorName, function(sensorData) {
-                var chart = renderSensorChart(sensorName, sensorData);
-                updateMinMaxDates(chart);
-                charts.push(chart);
-                if (charts.length == sensors.length) {
-                    _.each(charts, function(chart) {
-                        chart.updateOptions({
-                            dateWindow: [minDate, maxDate]
+            var dataUrl = '/_data/sensor/' + sensorName 
+                + '?limit=' + maxRows;
+            var id = sensorName.replace('/', '_').replace(/\+/g, '-');
+            if (document.getElementById(id)) {
+                $.getJSON(dataUrl, function(sensorData) {
+                    var chart = renderSensorChart(id, sensorData);
+                    updateMinMaxDates(chart);
+                    charts.push(chart);
+                    if (charts.length == sensors.length) {
+                        _.each(charts, function(chart) {
+                            chart.updateOptions({
+                                dateWindow: [minDate, maxDate]
+                            });
                         });
-                    });
-                }
-            });
+                    }
+                });
+            }
         });
     });
 });

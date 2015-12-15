@@ -6,9 +6,35 @@ $var title: $sensor
   <h1>Live SmartThings Sensor Values <small>and HTM anomaly scores</small></h1>
 </div>
 
+<ol class="breadcrumb">
+  <li><a href="/">Home</a></li>
+  <li><a href="/charts">Charts</a></li>
+  <li class="active">${sensor}</li>
+</ol>
+
 <div class="panel panel-warning">
     <div class="panel-heading">
-      <h2 class="panel-title" id="top">About the Charts</h2>
+        <div class="row">
+            <div class="col-md-2">
+                <h2 class="panel-title" id="top">About the Charts</h2>
+            </div>
+            <div class="col-md-10">
+                <div class="dropdown">
+                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                    # of Points
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                      <li><a href="?limit=100">100</a></li>
+                      <li><a href="?limit=500">500</a></li>
+                      <li><a href="?limit=1000">1000</a></li>
+                      <li><a href="?limit=5000">5000</a></li>
+                      <li><a href="?limit=10000">10000</a></li>
+                  </ul>
+                </div>
+            </div>
+
+        </div>
     </div>
     <div class="panel-body">
         <p>

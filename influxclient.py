@@ -85,7 +85,17 @@ def listSensors():
   return client.get_list_series()
 
 
-def getSensorData(measurement, component):
-  return client.query(
-    "select * from " + measurement + " where component = '" + component + "'"
-  )
+def getSensorData(measurement, component, limit=None):
+  query = "SELECT * FROM " + measurement \
+        + " WHERE component = '" + component + "'"
+  if limit is not None:
+    query += " GROUP BY * ORDER BY time DESC LIMIT {0}".format(limit)
+  data = client.query(query).raw
+  # Because of the descending order in the query, we want to reverse the data so
+  # it is actually in ascending order. The descending order was really just to get
+  # the latest data.
+  data["series"][0]["values"] = list(reversed(data["series"][0]["values"]))
+  return data
+
+
+

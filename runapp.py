@@ -74,8 +74,12 @@ class index:
 class sensor:
 
   def GET(self, measurement, component):
-    sensor = getSensorData(measurement, component)
-    return json.dumps(sensor.raw)
+    limit = None
+    query = web.input()
+    if "limit" in query:
+      limit = web.input()["limit"]
+    sensor = getSensorData(measurement, component, limit=limit)
+    return json.dumps(sensor)
 
 
 class sensors:
