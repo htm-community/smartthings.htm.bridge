@@ -23,7 +23,7 @@ $var title: Sensor Charts
             <div class="col-md-2">
                 <h2 class="panel-title" id="top">About the Charts</h2>
             </div>
-            <div class="col-md-1">
+            <div class="col-md-2">
 
                 $if len(sensors) > 1:
                     <div class="dropdown">
@@ -38,19 +38,31 @@ $var title: Sensor Charts
                     </div>
 
             </div>
-            <div class="col-md-9">
+
+            <div class="col-md-2">
                 <div class="dropdown">
-                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                     # of Points
                     <span class="caret"></span>
                   </button>
-                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
                       <li><a href="?limit=100">100</a></li>
                       <li><a href="?limit=500">500</a></li>
                       <li><a href="?limit=1000">1000</a></li>
                       <li><a href="?limit=5000">5000</a></li>
                       <li><a href="?limit=10000">10000</a></li>
                       <li><a href="?limit=50000">50000</a></li>
+                  </ul>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="dropdown">
+                  <button class="btn btn-default dropdown-toggle" type="button" id="sinceDropDown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                    Since
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="sinceDropDown" id="sinceDropDownList">
                   </ul>
                 </div>
             </div>
