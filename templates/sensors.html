@@ -1,4 +1,4 @@
-$def with (sensors)
+$def with (sensors, renderChart)
 
 $var title: Sensor Charts
 
@@ -60,17 +60,8 @@ $var title: Sensor Charts
 
 <div id="chart-container">
 
-    $for name in sensors:
-        <div class="panel panel-info" id="${name}-container">
-          <div class="panel-heading">
-            <h3 class="panel-title">
-                <a href="/chart/${name}">${name}</a>
-            </h3>
-          </div>
-          <div class="panel-body chart" id="${name}">
-            
-          </div>
-        </div>
+    $for sensor in sensors:
+      $:renderChart(sensor)
 
 </div>
 
