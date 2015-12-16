@@ -1,4 +1,4 @@
-$def with (sensors)
+$def with (sensors, renderChart)
 
 $var title: Sensor Charts
 
@@ -8,7 +8,13 @@ $var title: Sensor Charts
 
 <ol class="breadcrumb">
   <li><a href="/">Home</a></li>
-  <li class="active">Charts</li>
+
+  $if len(sensors) == 1:
+      <li><a href="/sensors">Sensors</a></li>
+      <li class="active">${sensors[0]}</li>
+  $else:
+      <li class="active">Charts</li>
+
 </ol>
 
 <div class="panel panel-warning">
@@ -18,16 +24,19 @@ $var title: Sensor Charts
                 <h2 class="panel-title" id="top">About the Charts</h2>
             </div>
             <div class="col-md-1">
-                <div class="dropdown">
-                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                    Charts
-                    <span class="caret"></span>
-                  </button>
-                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                    $for name in sensors:
-                        <li><a href="#${name}">${name}</a></li>
-                  </ul>
-                </div>
+
+                $if len(sensors) > 1:
+                    <div class="dropdown">
+                      <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                        Charts
+                        <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                        $for name in sensors:
+                            <li><a href="#${name}">${name}</a></li>
+                      </ul>
+                    </div>
+
             </div>
             <div class="col-md-9">
                 <div class="dropdown">
@@ -60,17 +69,8 @@ $var title: Sensor Charts
 
 <div id="chart-container">
 
-    $for name in sensors:
-        <div class="panel panel-info" id="${name}-container">
-          <div class="panel-heading">
-            <h3 class="panel-title">
-                <a href="/chart/${name}">${name}</a>
-            </h3>
-          </div>
-          <div class="panel-body chart" id="${name}">
-            
-          </div>
-        </div>
+    $for sensor in sensors:
+      $:renderChart(sensor)
 
 </div>
 
