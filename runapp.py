@@ -75,10 +75,13 @@ class sensor:
 
   def GET(self, measurement, component):
     limit = None
+    since = None
     query = web.input()
     if "limit" in query:
-      limit = web.input()["limit"]
-    sensor = getSensorData(measurement, component, limit=limit)
+      limit = query["limit"]
+    if "since" in query:
+      since = query["since"]
+    sensor = getSensorData(measurement, component, limit=limit, since=since)
     return json.dumps(sensor)
 
 
