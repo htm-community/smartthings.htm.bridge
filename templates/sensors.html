@@ -62,7 +62,7 @@ $var title: Sensor Charts
             Anomaly values are plotted on the secondary Y axis on the right. Door open/close values are either <code>0</code> or <code>1</code>. I don't understand the acceleration data yet. Data is coming from a <a href="https://github.com/rhyolight/smartthings-apps/blob/master/http-poster.groovy">SmartThings app</a>. It is being send via HTTP to <a href="https://github.com/numenta/nupic">NuPIC</a> running behind a <a href="https://github.com/nupic-community/hitc">REST API</a>. Sensor values and HTM results are saved to a time-series database called <a href="https://docs.influxdata.com/influxdb/v0.9/concepts/key_concepts/">InfluxDB</a>.
         </p>
         <p>
-            You can also use the URL query parameters to declare how many data points you want to show in the graph(s) below. Just add <code>?limit=X</code> to the URL, or use the dropdown in the panel header above. 
+            You can also use the URL query parameters to declare how many data points you want to show in the graph(s) below. Just add <code>?limit=X</code> to the URL, or use the dropdown in the panel header above.
         </p>
     </div>
 </div>
@@ -73,7 +73,3 @@ $var title: Sensor Charts
       $:renderChart(sensor)
 
 </div>
-
-<script src="/static/bower_components/dygraphs/dygraph-combined.js"></script>
-<!-- <script src="/static/bower_components/dygraphs/extras/synchronizer.js"></script> -->
-<script src="/static/js/charts.js"></script>
