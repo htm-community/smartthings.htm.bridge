@@ -1,0 +1,3 @@
+describe('ngCharts', function () {
+
+});
