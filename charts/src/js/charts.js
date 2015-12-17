@@ -46,13 +46,13 @@ $(function() {
 
         var headers = series.columns;
         var values = series.values;
-        
+
         rows.push(headers);
-        
+
         _.each(values, function(values) {
             rows.push(values.join(','));
         });
-        
+
         return rows.join('\n');
     }
 
@@ -60,7 +60,7 @@ $(function() {
         var el = document.getElementById(id);
         removeStringData(data);
         var csvString = convertJsonDataToCsv(data);
-        var width = $('#' + id + '-container').width()
+        var width = $('#' + id + '-container').width();
         return new Dygraph(el, csvString, {
             width: width,
             height: 400,
@@ -92,48 +92,17 @@ $(function() {
         return renderChart(id, data);
     }
 
-    function populateSinceDropDown() {
-        var now = moment()
-        var durations = [
-            moment.duration(10, 'minutes'),
-            moment.duration(1, 'hour'),
-            moment.duration(3, 'hours'),
-            moment.duration(6, 'hours'),
-            moment.duration(12, 'hours'),
-            moment.duration(1, 'day'),
-            moment.duration(3, 'days'),
-            moment.duration(1, 'week')
-        ];
-        var $ul = $('#sinceDropDownList');
-        var listItems = []
-        _.each(durations, function(duration) {
-            var timestamp = now.subtract(duration).unix();
-            var $link = $('<a>', {
-                href: '?since=' + timestamp,
-                text: duration.humanize()
-            });
-            var $li = $('<li>');
-            $li.append($link);
-            listItems.push($li);
-        });
-        $ul.append(listItems);
-    }
-
 
     $.getJSON('/_data/sensors', function(sensors) {
         var maxRows = MAX_ROWS_CHARTED_SINGLE;
         var query = window.STHTMB.utils.getUrlVars();
-        if (query.limit != undefined) {
+        if (query.limit !== undefined) {
             maxRows = query.limit;
         } else if (window.location.href.indexOf('/charts') > -1) {
             maxRows = MAX_ROWS_CHARTED_GROUP;
         }
         _.each(sensors, function(sensorName) {
-            var dataUrl = '/_data/sensor/' + sensorName 
-                + '?limit=' + maxRows;
-            if (query.since) {
-                dataUrl += '&since=' + query.since;
-            }
+            var dataUrl = '/_data/sensor/' + sensorName + '?limit=' + maxRows;
             var id = sensorName.replace('/', '_').replace(/\+/g, '-');
             if (document.getElementById(id)) {
                 $.getJSON(dataUrl, function(sensorData) {
@@ -151,7 +120,4 @@ $(function() {
             }
         });
     });
-
-    populateSinceDropDown();
-
 });
