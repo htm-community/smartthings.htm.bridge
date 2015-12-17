@@ -13,12 +13,13 @@ module.exports = function(config){
 
   // list of files / patterns to load in the browser
   files : [
+    'charts/bower_components/jquery/dist/jquery.js',
     'charts/bower_components/angular/angular.js',
     'charts/bower_components/angular-mocks/angular-mocks.js',
     'charts/bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
+    'charts/bower_components/bootstrap/dist/js/bootstrap.js',
     'charts/bower_components/moment/moment.js',
     'charts/bower_components/dygraphs/dygraph-combined.js',
-    'charts/bower_components/jquery/dist/jquery.js',
     'charts/bower_components/lodash/lodash.js',
     'charts/src/**/*.js',
     'charts/test/unit/**/*.spec.js'

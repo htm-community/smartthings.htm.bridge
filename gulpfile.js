@@ -16,11 +16,12 @@ var appJS = [
 ];
 
 var externalJS = [
+  "charts/bower_components/jquery/dist/jquery.min.js",
   "charts/bower_components/angular/angular.min.js",
   "charts/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js",
+  "charts/bower_components/bootstrap/dist/js/bootstrap.min.js",
   "charts/bower_components/dygraphs/dygraph-combined.js",
   "charts/bower_components/moment/min/moment.min.js",
-  "charts/bower_components/jquery/dist/jquery.min.js",
   "charts/bower_components/lodash/lodash.min.js"
 ];
 
