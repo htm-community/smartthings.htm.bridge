@@ -92,6 +92,33 @@ $(function() {
         return renderChart(id, data);
     }
 
+    function populateSinceDropDown() {
+        var now = moment();
+        var durations = [
+            moment.duration(10, 'minutes'),
+            moment.duration(1, 'hour'),
+            moment.duration(3, 'hours'),
+            moment.duration(6, 'hours'),
+            moment.duration(12, 'hours'),
+            moment.duration(1, 'day'),
+            moment.duration(3, 'days'),
+            moment.duration(1, 'week')
+        ];
+        var $ul = $('#sinceDropDownList');
+        var listItems = [];
+        _.each(durations, function(duration) {
+            var timestamp = now.subtract(duration).unix();
+            var $link = $('<a>', {
+                href: '?since=' + timestamp,
+                text: duration.humanize()
+            });
+            var $li = $('<li>');
+            $li.append($link);
+            listItems.push($li);
+        });
+        $ul.append(listItems);
+    }
+
 
     $.getJSON('/_data/sensors', function(sensors) {
         var maxRows = MAX_ROWS_CHARTED_SINGLE;
@@ -103,6 +130,9 @@ $(function() {
         }
         _.each(sensors, function(sensorName) {
             var dataUrl = '/_data/sensor/' + sensorName + '?limit=' + maxRows;
+            if (query.since) {
+                dataUrl += '&since=' + query.since;
+            }
             var id = sensorName.replace('/', '_').replace(/\+/g, '-');
             if (document.getElementById(id)) {
                 $.getJSON(dataUrl, function(sensorData) {
@@ -120,4 +150,7 @@ $(function() {
             }
         });
     });
+
+    populateSinceDropDown();
+
 });
