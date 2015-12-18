@@ -95,12 +95,12 @@ class Sensors:
 
   def GET(self):
     # .replace('/', '_').replace(/\+/g, '-')
-    sensorIds = [
-      s.replace("/", "_").replace("+", "-") 
-      for s in getSensorIds(listSensors())
-    ]
+    #sensorIds = [
+    #  s.replace("/", "_").replace("+", "-")
+    #  for s in getSensorIds(listSensors())
+    #]
     return render.layout(
-      render.sensors(sensorIds, render.chart)
+      render.sensors(getSensorIds(listSensors()), render.chart)
     )
 
 
