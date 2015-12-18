@@ -79,10 +79,9 @@ $var title: Sensor Charts
     </div>
 </div>
 
-<div id="chart-container">
+<div id="chart-container" ng-controller="appCtrl">
 
     $for sensor in sensors:
       $:renderChart(sensor)
 
 </div>
-<script src="/static/app.js"></script>
