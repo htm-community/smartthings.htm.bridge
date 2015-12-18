@@ -1,3 +1,4 @@
+/*
 $(function() {
 
     var $chartContainer = $('#chart-container');
@@ -154,3 +155,4 @@ $(function() {
     populateSinceDropDown();
 
 });
+*/
