@@ -17,18 +17,18 @@ print("Connecting to {0}:{1}@{2}:{3}".format(
   INFLUX_USER, INFLUX_PASS, INFLUX_HOST, INFLUX_PORT
 ))
 client = InfluxDBClient(
-  host=INFLUX_HOST, 
-  port=INFLUX_PORT, 
-  username=INFLUX_USER, 
-  password=INFLUX_PASS, 
+  host=INFLUX_HOST,
+  port=INFLUX_PORT,
+  username=INFLUX_USER,
+  password=INFLUX_PASS,
   database=INFLUX_DB,
   ssl=True
 )
 backupClient = InfluxDBClient(
-  host=INFLUX_HOST, 
-  port=INFLUX_PORT, 
-  username=INFLUX_USER, 
-  password=INFLUX_PASS, 
+  host=INFLUX_HOST,
+  port=INFLUX_PORT,
+  username=INFLUX_USER,
+  password=INFLUX_PASS,
   database=INFLUX_DB_BACKUP,
   ssl=True
 )
@@ -102,7 +102,7 @@ def getSensorData(measurement, component, limit=None, since=None):
   # Because of the descending order in the query, we want to reverse the data so
   # it is actually in ascending order. The descending order was really just to get
   # the latest data.
-  data["series"][0]["values"] = list(reversed(data["series"][0]["values"]))
+  data["series"][0]["values"] = list(data["series"][0]["values"])
   return data
 
 
