@@ -7,15 +7,20 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
       maxRows : "@"
     },
     replace: true,
-    template: "<div class='chart'></div>",
+    template: "" +
+              "<div class='chart'>" +
+               // + "<"
+              "</div>",
     link: function(scope, element, attrs) {
 
       scope.view = {
         chart : null
       };
 
-      var i;
-      /*
+      var i,
+          minDate,
+          maxDate;
+        /*
       var updateMinMaxDates = function(chart) {
         var extremes = chart.xAxisExtremes();
         var min = extremes.shift();
@@ -28,14 +33,14 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
         }
       };
       */
-      var removeStringData = function(data) {
+      var removeStringData = function (data) {
         var stringColumns = ['component', 'timezone'];
         var doomedIndexes = [];
         var series = data.series[0];
         angular.forEach(series.columns, function(name, index) {
-            if (stringColumns.indexOf(name) !== -1) {
-                doomedIndexes.push(index);
-            }
+          if (stringColumns.indexOf(name) !== -1) {
+            doomedIndexes.push(index);
+          }
         });
         // Now that we know which indexes are doomed, we reverse the order so we
         // can extract them from the list from the end
@@ -127,7 +132,6 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
           removeStringData(sensorData.data);
           setDates(sensorData.data);
           scope.view.chart = renderChart(sensorData.data);
-          //updateMinMaxDates(scope.view.chart);
           /*
           updateMinMaxDates(scope.view.chart);
           charts.push(chart);
