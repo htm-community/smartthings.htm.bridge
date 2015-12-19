@@ -122,12 +122,14 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
 
       // load the data
       var getData = function() {
+
         var dataUrl = '/_data/sensor/' + scope.sensorName;//  + '?limit=' + scope.maxRows;
-        /*
-        if (sensorSince) {
-            dataUrl += '&since=' + sensorSince;
-        }
-        */
+        // get data from 1 day ago
+        var d = new Date();
+        d.setDate(d.getDate() - 1);
+        var since = d.getTime() / 1000;
+        dataUrl += '&since=' + since;
+
         $http.get(dataUrl).then(function(sensorData) {
           removeStringData(sensorData.data);
           setDates(sensorData.data);
