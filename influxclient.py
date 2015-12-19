@@ -90,8 +90,9 @@ def getSensorData(measurement, component, limit=None, since=None):
         + " WHERE component = '" + component + "'"
   if since is not None:
     query += " AND time > {0}s".format(since)
+  query += " GROUP BY * ORDER BY time DESC"
   if limit is not None:
-    query += " GROUP BY * ORDER BY time DESC LIMIT {0}".format(limit)
+    query += " LIMIT {0}".format(limit)
   response = client.query(query)
 
   # Don't process empty responses
@@ -102,7 +103,7 @@ def getSensorData(measurement, component, limit=None, since=None):
   # Because of the descending order in the query, we want to reverse the data so
   # it is actually in ascending order. The descending order was really just to get
   # the latest data.
-  data["series"][0]["values"] = list(data["series"][0]["values"])
+  data["series"][0]["values"] = list(reversed(data["series"][0]["values"]))
   return data
 
 

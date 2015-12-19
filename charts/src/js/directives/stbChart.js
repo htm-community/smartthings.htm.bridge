@@ -1,4 +1,4 @@
-angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http, stbUtils) {
+angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', function($http, stbUtils, CONFIG) {
   return {
     restrict: 'EA',
     scope: {
@@ -9,7 +9,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
     replace: true,
     template: "" +
               "<div class='chart'>" +
-               // + "<"
+               //"<"
               "</div>",
     link: function(scope, element, attrs) {
 
@@ -17,24 +17,10 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
         chart : null
       };
 
-      var i,
-          minDate,
-          maxDate;
-        /*
-      var updateMinMaxDates = function(chart) {
-        var extremes = chart.xAxisExtremes();
-        var min = extremes.shift();
-        var max = extremes.shift();
-        if (! minDate || min < minDate) {
-            minDate = min;
-        }
-        if (! maxDate || max > maxDate) {
-            maxDate = max;
-        }
-      };
-      */
+      var i;
+
       var removeStringData = function (data) {
-        var stringColumns = ['component', 'timezone'];
+        var stringColumns = CONFIG.STRING_COLUMNS;
         var doomedIndexes = [];
         var series = data.series[0];
         angular.forEach(series.columns, function(name, index) {
@@ -123,28 +109,12 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', function($http
       // load the data
       var getData = function() {
 
-        var dataUrl = '/_data/sensor/' + scope.sensorName;//  + '?limit=' + scope.maxRows;
-        // get data from 1 day ago
-        var d = new Date();
-        d.setDate(d.getDate() - 1);
-        var since = d.getTime() / 1000;
-        dataUrl += '&since=' + since;
+        var dataUrl = '/_data/sensor/' + scope.sensorName + '?limit=' + CONFIG.DEFAULT_LIMIT;
 
         $http.get(dataUrl).then(function(sensorData) {
           removeStringData(sensorData.data);
           setDates(sensorData.data);
           scope.view.chart = renderChart(sensorData.data);
-          /*
-          updateMinMaxDates(scope.view.chart);
-          charts.push(chart);
-          if (charts.length == sensors.length) {
-            _.each(charts, function(chart) {
-                chart.updateOptions({
-                  dateWindow: [minDate, maxDate]
-                });
-            });
-          }
-          */
         }, handleError);
       };
 
