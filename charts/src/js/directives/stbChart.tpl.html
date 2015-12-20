@@ -4,7 +4,7 @@
       <div class="col-md-6">
         <label class="col-md-6 control-label">Row Limit</label>
         <div class="col-md-6">
-          <select class="form-control" ng-options="limit for limit in view.limitOptions" ng-model="view.limit" ng-change="setLimit()">
+          <select class="form-control" ng-options="limit for limit in view.limitOptions" ng-model="view.limit" ng-change="getData()">
             <option value="">None</option>
           </select>
         </div>
@@ -12,7 +12,9 @@
       <div class="col-md-6">
         <label class="col-md-6 control-label">Since</label>
         <div class="col-md-6">
-          <select class="form-control" ng-options="since for since in view.sinceOptions" ng-model="view.since" ng-change="setLimit()"></select>
+          <select class="form-control" ng-options="(value.number + ' ' + value.units) for (name, value) in view.sinceOptions" ng-model="view.since" ng-change="getData()">
+            <option value="">None</option>
+          </select>
         </div>
       </div>
     </div>
