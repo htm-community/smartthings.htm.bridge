@@ -1,0 +1,21 @@
+<div class="chart">
+  <div class="chart-controls form-horizontal">
+    <div class="form-group">
+      <div class="col-md-6">
+        <label class="col-md-6 control-label">Row Limit</label>
+        <div class="col-md-6">
+          <select class="form-control" ng-options="limit for limit in view.limitOptions" ng-model="view.limit" ng-change="setLimit()">
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="col-md-6 control-label">Since</label>
+        <div class="col-md-6">
+          <select class="form-control" ng-options="since for since in view.sinceOptions" ng-model="view.since" ng-change="setLimit()"></select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chart-container"></div>
+</div>

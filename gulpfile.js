@@ -4,16 +4,20 @@ var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglify');
 var concat = require('gulp-concat');
 var less = require('gulp-less');
+var templateCache = require('gulp-angular-templatecache');
 var path = require('path');
 var minifyCSS = require('gulp-minify-css');
 var del = require('del');
 var karmaServer = require('karma').Server;
+var addStream = require('add-stream');
 
 var appName = "smartthings.htm.bridge";
 
 var appJS = [
   "charts/src/js/**/*.js"
 ];
+
+var templates = 'charts/src/js/**/*.html';
 
 var externalJS = [
   "charts/bower_components/jquery/dist/jquery.min.js",
@@ -33,12 +37,19 @@ gulp.task('clean', function() {
   return del(['static/*']);
 });
 
+function prepareTemplates() {
+  return gulp.src(templates)
+    //.pipe(minify and preprocess the template html here)
+    .pipe(templateCache());
+}
+
 gulp.task('appjs', ['clean'], function() {
   return gulp.src(appJS)
     .pipe(jshint())
     .pipe(jshint.reporter('default'))
+    .pipe(addStream.obj(prepareTemplates()))
     .pipe(concat('app.js'))
-    .pipe(uglify())
+    //.pipe(uglify())
     .pipe(gulp.dest('static'));
 });
 
