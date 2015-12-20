@@ -14,14 +14,26 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         chart : null,
         limitOptions : CONFIG.LIMIT_OPTIONS,
         limit : CONFIG.LIMIT_OPTIONS[0],
-        since : null
-      };
-
-      scope.setLimit = function() {
-        getData();
+        since : null,
+        sinceOptions : [
+          {number : 10, units : 'minutes'},
+          {number : 1, units : 'hour'},
+          {number : 3, units : 'hours'},
+          {number : 6, units : 'hours'},
+          {number : 12, units : 'hours'},
+          {number : 1, units : 'day'},
+          {number : 3, units : 'days'},
+          {number : 1, units : 'week'}
+        ]
       };
 
       var i;
+
+      var getSince = function(since) {
+        var now = moment();
+        var duration = moment.duration(since.number, since.units);
+        return now.subtract(duration).unix();
+      };
 
       var removeStringData = function (data) {
         var stringColumns = CONFIG.STRING_COLUMNS;
@@ -116,7 +128,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       };
 
       // load the data
-      var getData = function() {
+      scope.getData = function() {
         var dataUrl = '/_data/sensor/' + scope.sensorName;
         var options = {
           'params' : {}
@@ -125,12 +137,12 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           options.params.limit = scope.view.limit;
         }
         if (scope.view.since !== null) {
-          options.params.since = scope.view.since;
+          options.params.since = getSince(scope.view.since);
         }
         $http.get(dataUrl, options).then(function(sensorData) {
           preprocessData(sensorData.data);
           if (scope.view.chart !== null) {
-            scope.view.chart.updateOptions({'file': sensorData.data.series[0].values})
+            scope.view.chart.updateOptions({'file': sensorData.data.series[0].values});
           } else {
             scope.view.chart = renderChart(sensorData.data);
           }
@@ -174,7 +186,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         });
       };
 
-      getData();
+      scope.getData();
 
     }
   };
