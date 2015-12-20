@@ -7,14 +7,18 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       maxRows : "@"
     },
     replace: true,
-    template: "" +
-              "<div class='chart'>" +
-               //"<"
-              "</div>",
+    templateUrl: "directives/stbChart.tpl.html",
     link: function(scope, element, attrs) {
 
       scope.view = {
-        chart : null
+        chart : null,
+        limitOptions : CONFIG.LIMIT_OPTIONS,
+        limit : CONFIG.LIMIT_OPTIONS[0],
+        since : null
+      };
+
+      scope.setLimit = function() {
+        getData();
       };
 
       var i;
@@ -106,15 +110,30 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         return data;
       };
 
+      var preprocessData = function(data) {
+        removeStringData(data);
+        setDates(data);
+      };
+
       // load the data
       var getData = function() {
-
-        var dataUrl = '/_data/sensor/' + scope.sensorName + '?limit=' + CONFIG.DEFAULT_LIMIT;
-
-        $http.get(dataUrl).then(function(sensorData) {
-          removeStringData(sensorData.data);
-          setDates(sensorData.data);
-          scope.view.chart = renderChart(sensorData.data);
+        var dataUrl = '/_data/sensor/' + scope.sensorName;
+        var options = {
+          'params' : {}
+        };
+        if (scope.view.limit !== null) {
+          options.params.limit = scope.view.limit;
+        }
+        if (scope.view.since !== null) {
+          options.params.since = scope.view.since;
+        }
+        $http.get(dataUrl, options).then(function(sensorData) {
+          preprocessData(sensorData.data);
+          if (scope.view.chart !== null) {
+            scope.view.chart.updateOptions({'file': sensorData.data.series[0].values})
+          } else {
+            scope.view.chart = renderChart(sensorData.data);
+          }
         }, handleError);
       };
 
@@ -125,8 +144,9 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       // render the graph
 
       var renderChart = function(data) {
+        var container = element.find('.chart-container');
         return new Dygraph(
-          element[0],
+          container[0],
           data.series[0].values,
           {
             labels: data.series[0].columns,
