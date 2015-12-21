@@ -7,7 +7,7 @@ from hitcpy import HITC
 import web
 
 from influxclient import saveResult, listSensors, getSensorData
-# from htmclient import listModels, createModel, sendData
+
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
