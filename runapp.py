@@ -1,15 +1,18 @@
 import json
 import time
 from datetime import datetime
-import urllib
+
+from hitcpy import HITC
 
 import web
 
 from influxclient import saveResult, listSensors, getSensorData
-from htmclient import listModels, createModel, sendData
+
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
+
+HITC_URL = "http://localhost:5000"
 
 urls = (
   "/", "Index",
@@ -20,6 +23,7 @@ urls = (
 )
 app = web.application(urls, globals())
 render = web.template.render("templates/")
+hitcClient = HITC(HITC_URL)
 
 # Utility functions
 
@@ -27,7 +31,7 @@ def createModelFromDataPoint(modelId, point):
   with open("anomaly_params.json") as inputParams:
     modelSpec = json.loads(inputParams.read())
   modelSpec["guid"] = modelId
-  createdModel = createModel(json.dumps(modelSpec))
+  createdModel = hitcClient.create_model(modelSpec)
   print "Created {0}".format(createdModel)
 
 
@@ -38,7 +42,8 @@ def runOneDataPoint(modelId, point):
     "c0": timestamp,
     "c1": point["value"]
   }
-  return sendData(modelId, dataRow)
+  # There is only one value in the result list, so pop() it off.
+  return hitcClient.get_model(modelId).run(dataRow).pop()
 
 
 def getSensorIds(sensors):
@@ -55,14 +60,14 @@ def getSensorIds(sensors):
 class Index:
 
   def GET(self):
-    modelIds = [m["guid"] for m in listModels()]
+    modelIds = [m["guid"] for m in hitcClient.get_all_models()]
     return render.layout(
       render.index(modelIds)
     )
 
   def POST(self):
     data = json.loads(web.data())
-    modelIds = [m["guid"] for m in listModels()]
+    modelIds = [m.guid for m in hitcClient.get_all_models()]
     modelId = data["component"] + '_' +  data["stream"]
     if modelId not in modelIds:
       createModelFromDataPoint(modelId, data)
