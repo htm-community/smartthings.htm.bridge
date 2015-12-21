@@ -1,3 +1,4 @@
+import os
 import json
 import time
 from datetime import datetime
@@ -12,7 +13,7 @@ from influxclient import saveResult, listSensors, getSensorData
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
 
-HITC_URL = "http://localhost:5000"
+HITC_URL = os.environ["HITC"]
 
 urls = (
   "/", "Index",
