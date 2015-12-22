@@ -15,16 +15,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         limitOptions : CONFIG.LIMIT_OPTIONS,
         limit : CONFIG.LIMIT_OPTIONS[0],
         since : null,
-        sinceOptions : [
-          {number : 10, units : 'minutes'},
-          {number : 1, units : 'hour'},
-          {number : 3, units : 'hours'},
-          {number : 6, units : 'hours'},
-          {number : 12, units : 'hours'},
-          {number : 1, units : 'day'},
-          {number : 3, units : 'days'},
-          {number : 1, units : 'week'}
-        ]
+        sinceOptions : CONFIG.SINCE_OPTIONS
       };
 
       var i;

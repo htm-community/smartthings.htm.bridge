@@ -13,10 +13,9 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 urls = (
   "/", "Index",
+  "/_models", "Models",
   "/_data/sensors", "SensorsData",
-  "/_data/sensor/(.+)/(.+)", "SensorData",
-  "/sensors", "Sensors",
-  "/sensor/(.+)", "Sensor"
+  "/_data/sensor/(.+)/(.+)", "SensorData"
 )
 app = web.application(urls, globals())
 render = web.template.render("templates/")
@@ -52,13 +51,17 @@ def getSensorIds(sensors):
 
 # HTTP Handlers
 
-class Index:
+class Models:
 
   def GET(self):
     modelIds = [m["guid"] for m in listModels()]
-    return render.layout(
-      render.index(modelIds)
-    )
+    return json.dumps(modelIds)
+
+
+class Index:
+
+  def GET(self):
+    raise web.seeother('/static/index.html')
 
   def POST(self):
     data = json.loads(web.data())
@@ -89,28 +92,6 @@ class SensorsData:
 
   def GET(self):
     return json.dumps(getSensorIds(listSensors()))
-
-
-class Sensors:
-
-  def GET(self):
-    # .replace('/', '_').replace(/\+/g, '-')
-    #sensorIds = [
-    #  s.replace("/", "_").replace("+", "-")
-    #  for s in getSensorIds(listSensors())
-    #]
-    return render.layout(
-      render.sensors(getSensorIds(listSensors()), render.chart)
-    )
-
-
-class Sensor:
-
-  def GET(self, sensor):
-    return render.layout(
-      render.sensors([sensor], render.chart)
-    )
-
 
 
 # Start here

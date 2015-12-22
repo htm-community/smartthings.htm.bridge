@@ -1,26 +1,17 @@
-$def with (models)
-
-$var title: SmartThings HTM Bridge
-
 <div class="jumbotron">
     <h1>SmartThings HTM Bridge</h1>
-    
+
     <p>This is a <a href="https://github.com/rhyolight/smartthings.htm.bridge">work in progress</a>.</p>
 
     <p>SmartApps can <code>POST</code> data to this URL to relay it into HTM.</p>
-    
-    <p><a class="btn btn-primary btn-lg" href="/sensors" role="button">See Charts</a></p>
 
-</div>  
+    <p><a class="btn btn-primary btn-lg" ui-sref="sensors.list" role="button">See Charts</a></p>
+
+</div>
 
 <p>This web server relays SmartThings data from a SmartApp into an <a href="https://github.com/nupic-community/htm-over-http">HTM HTTP server</a>.</p>
 
 <h3>The following models are active in HTM:</h3>
 <ul>
-
-$for item in models:
-    <li>
-      $item
-    </li>
-    
+    <li ng-repeat="model in view.models">{{model}}</li>
 </ul>

@@ -22,11 +22,11 @@ var templates = 'charts/src/js/**/*.html';
 var externalJS = [
   "charts/bower_components/jquery/dist/jquery.min.js",
   "charts/bower_components/angular/angular.min.js",
+  "charts/bower_components/angular-ui-router/release/angular-ui-router.min.js",
   "charts/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js",
   "charts/bower_components/bootstrap/dist/js/bootstrap.min.js",
   "charts/bower_components/dygraphs/dygraph-combined.js",
-  "charts/bower_components/moment/min/moment.min.js",
-  "charts/bower_components/lodash/lodash.min.js"
+  "charts/bower_components/moment/min/moment.min.js"
 ];
 
 gulp.task('default', ['build']);
@@ -72,8 +72,7 @@ gulp.task('less', ['clean'], function() {
 });
 
 var files = [
-  //'client/src/index.html',
-  //'client/src/assets/*'
+  'charts/src/index.html'
 ];
 
 var fonts = ['charts/bower_components/bootstrap/fonts/*'];
@@ -82,7 +81,7 @@ gulp.task('static', ['assets', 'fonts']);
 
 gulp.task('assets', ['clean'], function(){
   return gulp.src(files)
-    .pipe(gulp.dest('build'))
+    .pipe(gulp.dest('static'))
 });
 
 gulp.task('fonts', ['clean'], function(){
