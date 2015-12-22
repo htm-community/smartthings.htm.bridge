@@ -72,39 +72,6 @@ angular.module('pageNotFound', [])
 
 }]);
 
-
-$(function() {
-
-    function getUrlQueryString() {
-        var questionMarkIndex = window.location.href.indexOf('?');
-        var queryString = '';
-        if (questionMarkIndex > 1) {
-            queryString = window.location.href.slice(window.location.href.indexOf('?') + 1);
-        }
-        return queryString;
-    }
-
-    // Read a page's GET URL variables and return them as an associative array.
-    function getUrlVars() {
-        var vars = [], hash;
-        var hashes = getUrlQueryString().split('&');
-        for(var i = 0; i < hashes.length; i++)
-        {
-            hash = hashes[i].split('=');
-            vars.push(hash[0]);
-            vars[hash[0]] = hash[1];
-        }
-        return vars;
-    }
-
-    window.STHTMB = {
-        utils: {
-            getUrlQueryString: getUrlQueryString,
-            getUrlVars: getUrlVars
-        }
-    };
-});
-
 angular.module('app').directive('breadcrumb', ['$state', function($state) {
   return {
     restrict: 'E',
@@ -148,23 +115,42 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
   return {
     restrict: 'EA',
     scope: {
-      sensorName : "@",
-      sensorSince : "@",
-      maxRows : "@"
+      sensorName : "@"
     },
     replace: true,
     templateUrl: "directives/stbChart.tpl.html",
     link: function(scope, element, attrs) {
 
-      scope.view = {
-        chart : null,
-        limitOptions : CONFIG.LIMIT_OPTIONS,
-        limit : CONFIG.LIMIT_OPTIONS[0],
-        since : null,
-        sinceOptions : CONFIG.SINCE_OPTIONS
-      };
+      var i,
+          watchers = {};
 
-      var i;
+      // scope.view should be inherited from the parent scope, but if it is not:
+      if (!scope.view) {
+        scope.view = {};
+      }
+
+      scope.view.chart = null;
+      scope.view.limitOptions = CONFIG.LIMIT_OPTIONS;
+      scope.view.limit = CONFIG.LIMIT_OPTIONS[0];
+      scope.view.since = null;
+      scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
+
+
+
+      watchers.globalLimit = scope.$on('setLimit', function(event, newValue) {
+        if (newValue !== scope.view.limit) {
+          scope.view.limit = newValue;
+          scope.getData();
+        }
+      });
+
+      watchers.globalSince = scope.$on('setSince', function(event, newValue) {
+        if (newValue !== scope.view.since) {
+          console.log(newValue);
+          scope.view.since = newValue;
+          scope.getData();
+        }
+      });
 
       var getSince = function(since) {
         var now = moment();
@@ -277,11 +263,16 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           options.params.since = getSince(scope.view.since);
         }
         $http.get(dataUrl, options).then(function(sensorData) {
-          preprocessData(sensorData.data);
-          if (scope.view.chart !== null) {
-            scope.view.chart.updateOptions({'file': sensorData.data.series[0].values});
+          // console.log(sensorData);
+          if (angular.isDefined(sensorData.data.series)) {
+            preprocessData(sensorData.data);
+            if (scope.view.chart !== null) {
+              scope.view.chart.updateOptions({'file': sensorData.data.series[0].values});
+            } else {
+              scope.view.chart = renderChart(sensorData.data);
+            }
           } else {
-            scope.view.chart = renderChart(sensorData.data);
+            scope.view.chart = null;
           }
         }, handleError);
       };
@@ -324,6 +315,12 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       };
 
       scope.getData();
+
+      scope.$on("$destroy", function(){
+        angular.forEach(watchers, function(watcher){
+          watcher();
+        });
+      });
 
     }
   };
@@ -407,7 +404,7 @@ angular.module('sensors').config(['$stateProvider', '$urlRouterProvider', functi
   ]
 );
 
-angular.module('sensors').controller('SensorsListController', ['$scope', '$http', function($scope, $http) {
+angular.module('sensors').controller('SensorsListController', ['$scope', '$http', 'CONFIG', function($scope, $http, CONFIG) {
 
   $scope.sensors = [];
 
@@ -424,6 +421,21 @@ angular.module('sensors').controller('SensorsListController', ['$scope', '$http'
     $scope.sensors = response.data;
   });
 
+  $scope.setLimit = function() {
+    $scope.$broadcast("setLimit", $scope.view.limit);
+  };
+
+  $scope.setSince = function() {
+    $scope.$broadcast("setSince", $scope.view.since);
+  };
+
+  $scope.view = {
+    sinceOptions : CONFIG.SINCE_OPTIONS,
+    limitOptions : CONFIG.LIMIT_OPTIONS,
+    limit : CONFIG.LIMIT_OPTIONS[0],
+    since : null
+  };
+
 }]);
 
 angular.module('sensors').controller('SensorTypeController', ['$scope', '$http', '$stateParams', function($scope, $http, $stateParams) {
@@ -438,10 +450,10 @@ angular.module('sensors').controller('SensorController', ['$scope', '$http', '$s
 }]);
 
 angular.module("templates").run(["$templateCache", function($templateCache) {$templateCache.put("directives/breadcrumb.tpl.html","<ol class=\"breadcrumb\">\n  <li><a ui-sref=\"home\">Home</a></li>\n  <li ng-repeat=\"breadcrumb in breadcrumbs\" ng-class=\"{ \'active\' : breadcrumb.active }\"><a ng-if=\"!breadcrumb.active\" ui-sref=\"{{breadcrumb.state}}\">{{breadcrumb.name}}</a><span ng-if=\"breadcrumb.active\">{{breadcrumb.name}}</li>\n</ol>\n");
-$templateCache.put("directives/stbChart.tpl.html","<div class=\"chart\">\n  <div class=\"chart-controls form-horizontal\">\n    <div class=\"form-group\">\n      <div class=\"col-md-6\">\n        <label class=\"col-md-6 control-label\">Row Limit</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"limit for limit in view.limitOptions\" ng-model=\"view.limit\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"col-md-6\">\n        <label class=\"col-md-6 control-label\">Since</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"(value.number + \' \' + value.units) for (name, value) in view.sinceOptions\" ng-model=\"view.since\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n    </div>\n  </div>\n  <div class=\"chart-container\"></div>\n</div>\n");
+$templateCache.put("directives/stbChart.tpl.html","<div class=\"chart\">\n  <div class=\"chart-controls form-horizontal\">\n    <div class=\"form-group\">\n      <div class=\"col-md-6\">\n        <label class=\"col-md-6 control-label\">Row Limit</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"limit for limit in view.limitOptions\" ng-model=\"view.limit\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"col-md-6\">\n        <label class=\"col-md-6 control-label\">Time limit</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"(value.number + \' \' + value.units) for (name, value) in view.sinceOptions\" ng-model=\"view.since\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n    </div>\n  </div>\n  <div class=\"chart-container\"></div>\n</div>\n");
 $templateCache.put("routes/home/home.tpl.html","<div class=\"jumbotron\">\n    <h1>SmartThings HTM Bridge</h1>\n\n    <p>This is a <a href=\"https://github.com/rhyolight/smartthings.htm.bridge\">work in progress</a>.</p>\n\n    <p>SmartApps can <code>POST</code> data to this URL to relay it into HTM.</p>\n\n    <p><a class=\"btn btn-primary btn-lg\" ui-sref=\"sensors.list\" role=\"button\">See Charts</a></p>\n\n</div>\n\n<p>This web server relays SmartThings data from a SmartApp into an <a href=\"https://github.com/nupic-community/htm-over-http\">HTM HTTP server</a>.</p>\n\n<h3>The following models are active in HTM:</h3>\n<ul>\n    <li ng-repeat=\"model in view.models\">{{model}}</li>\n</ul>\n");
 $templateCache.put("routes/pageNotFound/pageNotFound.tpl.html","<div class=\"page-not-found container-fluid\">\n  <div class=\"jumbotron\">\n  <h3>We are sorry, but could not find the page you are looking for.</h3>\n  </div>\n</div>\n");
-$templateCache.put("routes/sensors/sensor.tpl.html","<div class=\"panel panel-info\">\n  <div class=\"panel-heading\">\n    <h3 class=\"panel-title\">\n      {{view.sensor}}\n    </h3>\n  </div>\n  <stb-chart sensor-name=\"{{view.sensor}}\" sensor-since=\"\" max-rows=\"\"></stb-chart>\n</div>\n");
+$templateCache.put("routes/sensors/sensor.tpl.html","<div class=\"panel panel-info\">\n  <div class=\"panel-heading\">\n    <h3 class=\"panel-title\">\n      {{view.sensor}}\n    </h3>\n  </div>\n  <stb-chart sensor-name=\"{{view.sensor}}\"></stb-chart>\n</div>\n");
 $templateCache.put("routes/sensors/sensor.type.tpl.html","<div ui-view></div>\n");
-$templateCache.put("routes/sensors/sensors.list.tpl.html","<div class=\"panel panel-warning\">\n    <div class=\"panel-heading clearfix\">\n      <div class=\"dropdowns pull-right\">\n        <div class=\"btn-group\">\n          <button class=\"btn btn-default dropdown-toggle\" type=\"button\" id=\"dropdownMenu1\" data-toggle=\"dropdown\" aria-haspopup=\"true\" aria-expanded=\"true\">\n            Charts\n            <span class=\"caret\"></span>\n          </button>\n          <ul class=\"dropdown-menu pull-right\" aria-labelledby=\"dropdownMenu1\">\n              <li ng-repeat=\"sensor in sensors\"><a ui-sref=\"sensors.type.sensor(sensorPath(sensor))\">{{sensor}}</a></li>\n          </ul>\n        </div>\n        <div class=\"btn-group\">\n          <button class=\"btn btn-default dropdown-toggle\" type=\"button\" id=\"dropdownMenu2\" data-toggle=\"dropdown\" aria-haspopup=\"true\" aria-expanded=\"true\">\n            # of Points\n            <span class=\"caret\"></span>\n          </button>\n          <ul class=\"dropdown-menu pull-right\" aria-labelledby=\"dropdownMenu2\">\n              <li><a href=\"?limit=100\">100</a></li>\n              <li><a href=\"?limit=500\">500</a></li>\n              <li><a href=\"?limit=1000\">1000</a></li>\n              <li><a href=\"?limit=5000\">5000</a></li>\n              <li><a href=\"?limit=10000\">10000</a></li>\n              <li><a href=\"?limit=50000\">50000</a></li>\n          </ul>\n        </div>\n        <div class=\"btn-group\">\n          <button class=\"btn btn-default dropdown-toggle\" type=\"button\" id=\"sinceDropDown\" data-toggle=\"dropdown\" aria-haspopup=\"true\" aria-expanded=\"true\">\n            Since\n            <span class=\"caret\"></span>\n          </button>\n          <ul class=\"dropdown-menu pull-right\" aria-labelledby=\"sinceDropDown\" id=\"sinceDropDownList\">\n          </ul>\n        </div>\n      </div>\n    </div>\n    <div class=\"panel-body\">\n        <h2 class=\"panel-title\" id=\"top\">About the Charts</h2>\n        <p>\n            Anomaly values are plotted on the secondary Y axis on the right. Door open/close values are either <code>0</code> or <code>1</code>. I don\'t understand the acceleration data yet. Data is coming from a <a href=\"https://github.com/rhyolight/smartthings-apps/blob/master/http-poster.groovy\">SmartThings app</a>. It is being send via HTTP to <a href=\"https://github.com/numenta/nupic\">NuPIC</a> running behind a <a href=\"https://github.com/nupic-community/hitc\">REST API</a>. Sensor values and HTM results are saved to a time-series database called <a href=\"https://docs.influxdata.com/influxdb/v0.9/concepts/key_concepts/\">InfluxDB</a>.\n        </p>\n        <p>\n            You can also use the URL query parameters to declare how many data points you want to show in the graph(s) below. Just add <code>?limit=X</code> to the URL, or use the dropdown in the panel header above.\n        </p>\n    </div>\n</div>\n<div class=\"panel panel-info\" ng-repeat=\"sensor in sensors\">\n  <div class=\"panel-heading\">\n    <h3 class=\"panel-title\">\n        <a ui-sref=\"sensors.type.sensor(sensorPath(sensor))\">{{sensor}}</a>\n    </h3>\n  </div>\n  <stb-chart sensor-name=\"{{sensor}}\" sensor-since=\"\" max-rows=\"\"></stb-chart>\n</div>\n");
+$templateCache.put("routes/sensors/sensors.list.tpl.html","<div class=\"panel panel-warning sensors-panel\">\n    <div class=\"panel-heading clearfix\">\n      <div class=\"row dropdowns\">\n        <div class=\"col-md-4\">\n          <div class=\"btn-group\">\n            <button class=\"btn btn-default dropdown-toggle\" type=\"button\" id=\"dropdownMenu1\" data-toggle=\"dropdown\" aria-haspopup=\"true\" aria-expanded=\"true\">\n              Jump to a chart <span class=\"caret\"></span>\n            </button>\n            <ul class=\"dropdown-menu\" aria-labelledby=\"dropdownMenu1\">\n                <li ng-repeat=\"sensor in sensors\"><a ui-sref=\"sensors.type.sensor(sensorPath(sensor))\">{{sensor}}</a></li>\n            </ul>\n          </div>\n        </div>\n        <div class=\"col-md-8 form-inline limits\">\n          <span class=\"set-limits\">Set limits for all charts:</span>\n          <div class=\"btn-group\">\n            <label for=\"limitOptions\">Row limit</label>\n            <select class=\"form-control\" name=\"limitOptions\" ng-options=\"limit for limit in view.limitOptions\" ng-model=\"view.limit\" ng-change=\"setLimit()\">\n              <option value=\"\">None</option>\n            </select>\n          </div>\n          <div class=\"btn-group\">\n            <label for=\"limitOptions\">Time limit</label>\n            <select class=\"form-control\" name=\"sinceOptions\" ng-options=\"(value.number + \' \' + value.units) for (name, value) in view.sinceOptions\" ng-model=\"view.since\" ng-change=\"setSince()\">\n              <option value=\"\">None</option>\n            </select>\n          </div>\n        </div>\n      </div>\n    </div>\n    <div class=\"panel-body\">\n        <h2 class=\"panel-title\" id=\"top\">About the Charts</h2>\n        <p>\n            Anomaly values are plotted on the secondary Y axis on the right. Door open/close values are either <code>0</code> or <code>1</code>. I don\'t understand the acceleration data yet. Data is coming from a <a href=\"https://github.com/rhyolight/smartthings-apps/blob/master/http-poster.groovy\">SmartThings app</a>. It is being send via HTTP to <a href=\"https://github.com/numenta/nupic\">NuPIC</a> running behind a <a href=\"https://github.com/nupic-community/hitc\">REST API</a>. Sensor values and HTM results are saved to a time-series database called <a href=\"https://docs.influxdata.com/influxdb/v0.9/concepts/key_concepts/\">InfluxDB</a>.\n        </p>\n       <!-- <p>\n            You can also use the URL query parameters to declare how many data points you want to show in the graph(s) below. Just add <code>?limit=X</code> to the URL, or use the dropdown in the panel header above.\n        </p> -->\n    </div>\n</div>\n<div class=\"panel panel-info\" ng-repeat=\"sensor in sensors\">\n  <div class=\"panel-heading\">\n    <h3 class=\"panel-title\">\n        <a ui-sref=\"sensors.type.sensor(sensorPath(sensor))\">{{sensor}}</a>\n    </h3>\n  </div>\n  <stb-chart sensor-name=\"{{sensor}}\"></stb-chart>\n</div>\n");
 $templateCache.put("routes/sensors/sensors.tpl.html","<div class=\"page-header\">\n  <h1>Live SmartThings Sensor Values <small>and HTM anomaly scores</small></h1>\n</div>\n\n<breadcrumb></breadcrumb>\n<div ui-view></div>\n");}]);

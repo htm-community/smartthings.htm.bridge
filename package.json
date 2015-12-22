@@ -4,7 +4,7 @@
   "description": "SmartApps can POST data to this URL to relay it into Hierarchical Temporal Memory",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rhyolight/smartthings.htm.bridge"
+    "url": "https://github.com/nupic-community/smartthings.htm.bridge"
   },
   "contributors": [
     {
@@ -20,7 +20,7 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rhyolight/smartthings.htm.bridge/issues"
+    "url": "https://github.com/nupic-community/smartthings.htm.bridge/issues"
   },
   "engines": {
     "node": "4.2.2"
