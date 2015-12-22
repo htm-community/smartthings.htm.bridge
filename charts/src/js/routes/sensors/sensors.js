@@ -27,7 +27,7 @@ angular.module('sensors').config(['$stateProvider', '$urlRouterProvider', functi
   ]
 );
 
-angular.module('sensors').controller('SensorsListController', ['$scope', '$http', function($scope, $http) {
+angular.module('sensors').controller('SensorsListController', ['$scope', '$http', 'CONFIG', function($scope, $http, CONFIG) {
 
   $scope.sensors = [];
 
@@ -43,6 +43,21 @@ angular.module('sensors').controller('SensorsListController', ['$scope', '$http'
   $http.get('/_data/sensors').then(function(response){
     $scope.sensors = response.data;
   });
+
+  $scope.setLimit = function() {
+    $scope.$broadcast("setLimit", $scope.view.limit);
+  };
+
+  $scope.setSince = function() {
+    $scope.$broadcast("setSince", $scope.view.since);
+  };
+
+  $scope.view = {
+    sinceOptions : CONFIG.SINCE_OPTIONS,
+    limitOptions : CONFIG.LIMIT_OPTIONS,
+    limit : CONFIG.LIMIT_OPTIONS[0],
+    since : null
+  };
 
 }]);
 

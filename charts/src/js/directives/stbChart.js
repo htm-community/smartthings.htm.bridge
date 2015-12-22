@@ -2,23 +2,42 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
   return {
     restrict: 'EA',
     scope: {
-      sensorName : "@",
-      sensorSince : "@",
-      maxRows : "@"
+      sensorName : "@"
     },
     replace: true,
     templateUrl: "directives/stbChart.tpl.html",
     link: function(scope, element, attrs) {
 
-      scope.view = {
-        chart : null,
-        limitOptions : CONFIG.LIMIT_OPTIONS,
-        limit : CONFIG.LIMIT_OPTIONS[0],
-        since : null,
-        sinceOptions : CONFIG.SINCE_OPTIONS
-      };
+      var i,
+          watchers = {};
 
-      var i;
+      // scope.view should be inherited from the parent scope, but if it is not:
+      if (!scope.view) {
+        scope.view = {};
+      }
+
+      scope.view.chart = null;
+      scope.view.limitOptions = CONFIG.LIMIT_OPTIONS;
+      scope.view.limit = CONFIG.LIMIT_OPTIONS[0];
+      scope.view.since = null;
+      scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
+
+
+
+      watchers.globalLimit = scope.$on('setLimit', function(event, newValue) {
+        if (newValue !== scope.view.limit) {
+          scope.view.limit = newValue;
+          scope.getData();
+        }
+      });
+
+      watchers.globalSince = scope.$on('setSince', function(event, newValue) {
+        if (newValue !== scope.view.since) {
+          console.log(newValue);
+          scope.view.since = newValue;
+          scope.getData();
+        }
+      });
 
       var getSince = function(since) {
         var now = moment();
@@ -131,11 +150,16 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           options.params.since = getSince(scope.view.since);
         }
         $http.get(dataUrl, options).then(function(sensorData) {
-          preprocessData(sensorData.data);
-          if (scope.view.chart !== null) {
-            scope.view.chart.updateOptions({'file': sensorData.data.series[0].values});
+          // console.log(sensorData);
+          if (angular.isDefined(sensorData.data.series)) {
+            preprocessData(sensorData.data);
+            if (scope.view.chart !== null) {
+              scope.view.chart.updateOptions({'file': sensorData.data.series[0].values});
+            } else {
+              scope.view.chart = renderChart(sensorData.data);
+            }
           } else {
-            scope.view.chart = renderChart(sensorData.data);
+            scope.view.chart = null;
           }
         }, handleError);
       };
@@ -178,6 +202,12 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       };
 
       scope.getData();
+
+      scope.$on("$destroy", function(){
+        angular.forEach(watchers, function(watcher){
+          watcher();
+        });
+      });
 
     }
   };

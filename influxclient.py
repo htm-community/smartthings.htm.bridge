@@ -8,8 +8,8 @@ from influxdb import InfluxDBClient
 
 INFLUX_HOST = os.environ["INFLUX_HOST"]
 INFLUX_PORT = os.environ["INFLUX_PORT"]
-INFLUX_USER = 'numenta' #os.environ["INFLUX_USER"]
-INFLUX_PASS = 'PWXucoyNe7n8' #os.environ["INFLUX_PASS"]
+INFLUX_USER = os.environ["INFLUX_USER"]
+INFLUX_PASS = os.environ["INFLUX_PASS"]
 INFLUX_DB = "smartthings"
 INFLUX_DB_BACKUP = "smartthings_sensor_only"
 
