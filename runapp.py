@@ -61,7 +61,7 @@ def getSensorIds(sensors):
 class Index:
 
   def GET(self):
-    modelIds = [m["guid"] for m in hitcClient.get_all_models()]
+    modelIds = [m.guid for m in hitcClient.get_all_models()]
     return render.layout(
       render.index(modelIds)
     )
