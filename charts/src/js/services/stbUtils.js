@@ -1,16 +1,15 @@
-$(function() {
+angular.module('app').factory('stbUtils', function(){
 
-    function getUrlQueryString() {
+  var service = {
+    getUrlQueryString : function() {
         var questionMarkIndex = window.location.href.indexOf('?');
         var queryString = '';
         if (questionMarkIndex > 1) {
             queryString = window.location.href.slice(window.location.href.indexOf('?') + 1);
         }
         return queryString;
-    }
-
-    // Read a page's GET URL variables and return them as an associative array.
-    function getUrlVars() {
+    },
+    getUrlVars : function() {
         var vars = [], hash;
         var hashes = getUrlQueryString().split('&');
         for(var i = 0; i < hashes.length; i++)
@@ -21,11 +20,7 @@ $(function() {
         }
         return vars;
     }
+  };
 
-    window.STHTMB = {
-        utils: {
-            getUrlQueryString: getUrlQueryString,
-            getUrlVars: getUrlVars
-        }
-    };
+  return service;
 });

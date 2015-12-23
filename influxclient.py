@@ -17,18 +17,18 @@ print("Connecting to {0}:{1}@{2}:{3}".format(
   INFLUX_USER, INFLUX_PASS, INFLUX_HOST, INFLUX_PORT
 ))
 client = InfluxDBClient(
-  host=INFLUX_HOST, 
-  port=INFLUX_PORT, 
-  username=INFLUX_USER, 
-  password=INFLUX_PASS, 
+  host=INFLUX_HOST,
+  port=INFLUX_PORT,
+  username=INFLUX_USER,
+  password=INFLUX_PASS,
   database=INFLUX_DB,
   ssl=True
 )
 backupClient = InfluxDBClient(
-  host=INFLUX_HOST, 
-  port=INFLUX_PORT, 
-  username=INFLUX_USER, 
-  password=INFLUX_PASS, 
+  host=INFLUX_HOST,
+  port=INFLUX_PORT,
+  username=INFLUX_USER,
+  password=INFLUX_PASS,
   database=INFLUX_DB_BACKUP,
   ssl=True
 )
@@ -90,8 +90,9 @@ def getSensorData(measurement, component, limit=None, since=None):
         + " WHERE component = '" + component + "'"
   if since is not None:
     query += " AND time > {0}s".format(since)
+  query += " GROUP BY * ORDER BY time DESC"
   if limit is not None:
-    query += " GROUP BY * ORDER BY time DESC LIMIT {0}".format(limit)
+    query += " LIMIT {0}".format(limit)
   response = client.query(query)
 
   # Don't process empty responses

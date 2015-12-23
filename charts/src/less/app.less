@@ -1,5 +1,16 @@
-div.chart {
+*[ui-sref] {
+  cursor: pointer;
+}
+
+.chart {
+  .chart-controls {
+    margin-top:20px;
+  }
+  .chart-container {
     margin-bottom: 30px;
+    width:100%;
+    height:400px;
+  }
 }
 
 .dygraph-legend {
@@ -9,4 +20,13 @@ div.chart {
     border-radius: 10px;
     box-shadow: 4px 4px 4px #888;
     pointer-events: none;
+}
+
+.sensors-panel {
+  .limits {
+    text-align:right;
+    .btn-group {
+      margin-left:15px;
+    }
+  }
 }
