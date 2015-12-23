@@ -60,14 +60,14 @@ def getSensorIds(sensors):
 class Models:
 
   def GET(self):
-    modelIds = [m["guid"] for m in hitcClient.get_all_models()]
+    modelIds = [m.guid for m in hitcClient.get_all_models()]
     return json.dumps(modelIds)
 
 
 class Index:
 
   def GET(self):
-    modelIds = [m["guid"] for m in listModels()]
+    modelIds = [m.guid for m in listModels()]
     return json.dumps(modelIds)
 
 
