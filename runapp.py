@@ -67,6 +67,13 @@ class Models:
 class Index:
 
   def GET(self):
+    modelIds = [m["guid"] for m in listModels()]
+    return json.dumps(modelIds)
+
+
+class Index:
+
+  def GET(self):
     raise web.seeother('/static/index.html')
 
   def POST(self):
