@@ -1,20 +1,28 @@
 <div class="chart">
   <div class="chart-controls form-horizontal">
     <div class="form-group">
-      <div class="col-md-6">
-        <label class="col-md-6 control-label">Row Limit</label>
+      <div class="col-md-3">
+        <label class="col-md-6 control-label">Row Limit:</label>
         <div class="col-md-6">
           <select class="form-control" ng-options="limit for limit in view.limitOptions" ng-model="view.limit" ng-change="getData()">
             <option value="">None</option>
           </select>
         </div>
       </div>
-      <div class="col-md-6">
-        <label class="col-md-6 control-label">Time limit</label>
+      <div class="col-md-3">
+        <label class="col-md-6 control-label">Time limit:</label>
         <div class="col-md-6">
           <select class="form-control" ng-options="(value.number + ' ' + value.units) for (name, value) in view.sinceOptions" ng-model="view.since" ng-change="getData()">
             <option value="">None</option>
           </select>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="col-md-3 control-label">Visibility:</label>
+        <div class="col-md-9">
+          <ul class="set-visiblity">
+            <li ng-repeat="field in view.fieldStates track by field.id" ng-if="field.name === 'anomalyScore' || field.name === 'anomalyLikelihood'"><input type="checkbox" ng-model="field.visible" ng-click="toggleVisibility(field)"> <label style="color: {{field.color}}">{{field.name}}</label></li>
+          </ul>
         </div>
       </div>
     </div>

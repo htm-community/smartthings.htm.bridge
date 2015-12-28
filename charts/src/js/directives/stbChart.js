@@ -21,6 +21,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.limit = CONFIG.LIMIT_OPTIONS[0];
       scope.view.since = null;
       scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
+      scope.view.fieldStates = [];
 
 
 
@@ -33,7 +34,6 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
 
       watchers.globalSince = scope.$on('setSince', function(event, newValue) {
         if (newValue !== scope.view.since) {
-          console.log(newValue);
           scope.view.since = newValue;
           scope.getData();
         }
@@ -132,6 +132,33 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         return data;
       };
 
+      var setFieldState = function(data) {
+        scope.view.fieldStates.length = 0;
+        var counter = 0;
+        for (i = 0; i < data.series[0].columns.length; i++) {
+          if (data.series[0].columns[i] === "time") {
+            continue;
+          }
+          scope.view.fieldStates.push({
+            name: data.series[0].columns[i],
+            visible: true,
+            id: counter,
+            color : "rgb(0,0,0)"
+          });
+          counter++;
+        }
+      };
+
+      var setColors = function(colors) {
+        for (i = 0; i < colors.length; i++) {
+          scope.view.fieldStates[i].color = colors[i];
+        }
+      };
+
+      scope.toggleVisibility = function(field) {
+        scope.view.chart.setVisibility(field.id, field.visible);
+      };
+
       var preprocessData = function(data) {
         removeStringData(data);
         setDates(data);
@@ -171,6 +198,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       // render the graph
 
       var renderChart = function(data) {
+        setFieldState(data);
         var container = element.find('.chart-container');
         return new Dygraph(
           container[0],
@@ -197,7 +225,12 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
               }
             },
             legend: 'follow',
-            labelsSeparateLines: true
+            labelsSeparateLines: true,
+            drawCallback: function(graph, is_initial) {
+              if (is_initial) {
+                setColors(graph.getColors());
+              }
+            }
         });
       };
 
