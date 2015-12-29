@@ -11,7 +11,10 @@
 
 <p>This web server relays SmartThings data from a SmartApp into an <a href="https://github.com/nupic-community/htm-over-http">HTM HTTP server</a>.</p>
 
-<h3>The following models are active in HTM:</h3>
-<ul>
-    <li ng-repeat="model in view.models">{{model}}</li>
-</ul>
+<div class="model-list">
+  <h3>The following models are active in HTM:</h3>
+  <div class="loading" ng-show="view.loading"><span class="loading-spin"></span></div>
+  <ul>
+      <li ng-repeat="model in view.models">{{model}}</li>
+  </ul>
+</div>
