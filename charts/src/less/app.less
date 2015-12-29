@@ -3,6 +3,7 @@
 }
 
 .chart {
+  position:relative;
   .chart-controls {
     margin-top:20px;
   }
@@ -28,6 +29,11 @@
   }
 }
 
+.model-list {
+  position:relative;
+  min-height:225px;
+}
+
 .dygraph-legend {
     background-color: rgba(252, 248, 227, 0.75) !important;
     padding: 4px;
@@ -43,5 +49,63 @@
     .btn-group {
       margin-left:15px;
     }
+  }
+}
+
+// loading animation
+.loading {
+  position:absolute;
+  top:50%;
+  left:50%;
+  margin-top:-50px;
+  margin-left:-50px;
+  z-index:1;
+}
+
+.loading-spin {
+  -webkit-transform-origin: 50% 50%;
+  transform-origin:50% 50%;
+  -ms-transform-origin:50% 50%; /* IE 9 */
+  -webkit-animation: spin .75s infinite linear;
+  -moz-animation: spin .75s infinite linear;
+  -o-animation: spin .75s infinite linear;
+  animation: spin .75s infinite linear;
+  background-color: transparent;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  display:block;
+  border: 10px solid @brand-primary;
+  border-top: 10px solid #fff;
+  border-left: 10px solid #fff;
+  border-right: 10px solid #fff;
+  border-radius: 100px;
+  box-shadow: 0 0 15px desaturate(@brand-primary,25%), inset 0 0 15px desaturate(@brand-primary,25%);
+}
+
+@-moz-keyframes spin {
+  from {
+    -moz-transform: rotate(0deg);
+  }
+  to {
+    -moz-transform: rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spin {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

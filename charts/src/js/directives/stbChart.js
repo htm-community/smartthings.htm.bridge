@@ -22,6 +22,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.since = null;
       scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
       scope.view.fieldStates = [];
+      scope.view.loading = false;
 
 
 
@@ -166,6 +167,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
 
       // load the data
       scope.getData = function() {
+        scope.view.loading = true;
         var dataUrl = '/_data/sensor/' + scope.sensorName;
         var options = {
           'params' : {}
@@ -192,6 +194,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       };
 
       var handleError = function(error) {
+        scope.view.loading = false;
         console.log(error);
       };
 
@@ -230,6 +233,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
               if (is_initial) {
                 setColors(graph.getColors());
               }
+              scope.view.loading = false;
             }
         });
       };

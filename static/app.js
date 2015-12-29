@@ -135,6 +135,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.since = null;
       scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
       scope.view.fieldStates = [];
+      scope.view.loading = false;
 
 
 
@@ -279,6 +280,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
 
       // load the data
       scope.getData = function() {
+        scope.view.loading = true;
         var dataUrl = '/_data/sensor/' + scope.sensorName;
         var options = {
           'params' : {}
@@ -305,6 +307,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       };
 
       var handleError = function(error) {
+        scope.view.loading = false;
         console.log(error);
       };
 
@@ -343,6 +346,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
               if (is_initial) {
                 setColors(graph.getColors());
               }
+              scope.view.loading = false;
             }
         });
       };
@@ -391,12 +395,19 @@ angular.module('home', ['ui.router']);
 angular.module('home').controller('HomeController', ['$scope', '$http', function($scope, $http) {
 
   $scope.view = {
-    models : []
+    models : [],
+    loading: true
   };
 
   $http.get('/_models').then(function(response){
     $scope.view.models = response.data;
-  });
+    $scope.view.loading = false;
+  }, onError);
+
+  var onError = function(error) {
+    console.log(error);
+    $scope.view.loading = false;
+  };
 
 
 }]);
@@ -483,8 +494,8 @@ angular.module('sensors').controller('SensorController', ['$scope', '$http', '$s
 }]);
 
 angular.module("templates").run(["$templateCache", function($templateCache) {$templateCache.put("directives/breadcrumb.tpl.html","<ol class=\"breadcrumb\">\n  <li><a ui-sref=\"home\">Home</a></li>\n  <li ng-repeat=\"breadcrumb in breadcrumbs\" ng-class=\"{ \'active\' : breadcrumb.active }\"><a ng-if=\"!breadcrumb.active\" ui-sref=\"{{breadcrumb.state}}\">{{breadcrumb.name}}</a><span ng-if=\"breadcrumb.active\">{{breadcrumb.name}}</li>\n</ol>\n");
-$templateCache.put("directives/stbChart.tpl.html","<div class=\"chart\">\n  <div class=\"chart-controls form-horizontal\">\n    <div class=\"form-group\">\n      <div class=\"col-md-3\">\n        <label class=\"col-md-6 control-label\">Row Limit:</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"limit for limit in view.limitOptions\" ng-model=\"view.limit\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"col-md-3\">\n        <label class=\"col-md-6 control-label\">Time limit:</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"(value.number + \' \' + value.units) for (name, value) in view.sinceOptions\" ng-model=\"view.since\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"col-md-6\">\n        <label class=\"col-md-3 control-label\">Visibility:</label>\n        <div class=\"col-md-9\">\n          <ul class=\"set-visiblity\">\n            <li ng-repeat=\"field in view.fieldStates track by field.id\" ng-if=\"field.name === \'anomalyScore\' || field.name === \'anomalyLikelihood\'\"><input type=\"checkbox\" ng-model=\"field.visible\" ng-click=\"toggleVisibility(field)\"> <label style=\"color: {{field.color}}\">{{field.name}}</label></li>\n          </ul>\n        </div>\n      </div>\n    </div>\n  </div>\n  <div class=\"chart-container\"></div>\n</div>\n");
-$templateCache.put("routes/home/home.tpl.html","<div class=\"jumbotron\">\n    <h1>SmartThings HTM Bridge</h1>\n\n    <p>This is a <a href=\"https://github.com/rhyolight/smartthings.htm.bridge\">work in progress</a>.</p>\n\n    <p>SmartApps can <code>POST</code> data to this URL to relay it into HTM.</p>\n\n    <p><a class=\"btn btn-primary btn-lg\" ui-sref=\"sensors.list\" role=\"button\">See Charts</a></p>\n\n</div>\n\n<p>This web server relays SmartThings data from a SmartApp into an <a href=\"https://github.com/nupic-community/htm-over-http\">HTM HTTP server</a>.</p>\n\n<h3>The following models are active in HTM:</h3>\n<ul>\n    <li ng-repeat=\"model in view.models\">{{model}}</li>\n</ul>\n");
+$templateCache.put("directives/stbChart.tpl.html","<div class=\"chart\">\n  <div class=\"chart-controls form-horizontal\">\n    <div class=\"form-group\">\n      <div class=\"col-md-3\">\n        <label class=\"col-md-6 control-label\">Row Limit:</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"limit for limit in view.limitOptions\" ng-model=\"view.limit\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"col-md-3\">\n        <label class=\"col-md-6 control-label\">Time limit:</label>\n        <div class=\"col-md-6\">\n          <select class=\"form-control\" ng-options=\"(value.number + \' \' + value.units) for (name, value) in view.sinceOptions\" ng-model=\"view.since\" ng-change=\"getData()\">\n            <option value=\"\">None</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"col-md-6\">\n        <label class=\"col-md-3 control-label\">Visibility:</label>\n        <div class=\"col-md-9\">\n          <ul class=\"set-visiblity\">\n            <li ng-repeat=\"field in view.fieldStates track by field.id\" ng-if=\"field.name === \'anomalyScore\' || field.name === \'anomalyLikelihood\'\"><input type=\"checkbox\" ng-model=\"field.visible\" ng-click=\"toggleVisibility(field)\"> <label style=\"color: {{field.color}}\">{{field.name}}</label></li>\n          </ul>\n        </div>\n      </div>\n    </div>\n  </div>\n  <div class=\"loading\" ng-show=\"view.loading\"><span class=\"loading-spin\"></span></div>\n  <div class=\"chart-container\"></div>\n</div>\n");
+$templateCache.put("routes/home/home.tpl.html","<div class=\"jumbotron\">\n    <h1>SmartThings HTM Bridge</h1>\n\n    <p>This is a <a href=\"https://github.com/rhyolight/smartthings.htm.bridge\">work in progress</a>.</p>\n\n    <p>SmartApps can <code>POST</code> data to this URL to relay it into HTM.</p>\n\n    <p><a class=\"btn btn-primary btn-lg\" ui-sref=\"sensors.list\" role=\"button\">See Charts</a></p>\n\n</div>\n\n<p>This web server relays SmartThings data from a SmartApp into an <a href=\"https://github.com/nupic-community/htm-over-http\">HTM HTTP server</a>.</p>\n\n<div class=\"model-list\">\n  <h3>The following models are active in HTM:</h3>\n  <div class=\"loading\" ng-show=\"view.loading\"><span class=\"loading-spin\"></span></div>\n  <ul>\n      <li ng-repeat=\"model in view.models\">{{model}}</li>\n  </ul>\n</div>\n");
 $templateCache.put("routes/pageNotFound/pageNotFound.tpl.html","<div class=\"page-not-found container-fluid\">\n  <div class=\"jumbotron\">\n  <h3>We are sorry, but could not find the page you are looking for.</h3>\n  </div>\n</div>\n");
 $templateCache.put("routes/sensors/sensor.tpl.html","<div class=\"panel panel-info\">\n  <div class=\"panel-heading\">\n    <h3 class=\"panel-title\">\n      {{view.sensor}}\n    </h3>\n  </div>\n  <stb-chart sensor-name=\"{{view.sensor}}\"></stb-chart>\n</div>\n");
 $templateCache.put("routes/sensors/sensor.type.tpl.html","<div ui-view></div>\n");
