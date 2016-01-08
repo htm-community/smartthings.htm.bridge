@@ -23,7 +23,9 @@ global hitcClient
 
 app = Flask(__name__)
 
-# Utility functions
+#####################
+# Utility functions #
+#####################
 
 def getHitcUrl():
   url = os.environ["HITC"]
@@ -44,12 +46,19 @@ def createOptionsParser():
           """
   )
   parser.add_option(
-    "-d",
+    "-t",
     "--disable-htm",
     action="store_true",
     default=False,
     dest="htmDisabled",
     help="Disable passing all data through HTM server.")
+  parser.add_option(
+    "-d",
+    "--debug",
+    action="store_true",
+    default=False,
+    dest="debug",
+    help="Starts server in debug mode.")
   parser.add_option(
     "-p",
     "--port",
@@ -87,7 +96,9 @@ def getSensorIds(sensors):
   return sorted(list(set(sensorIds)))
 
 
-# HTTP Handlers
+#################
+# HTTP Handlers #
+#################
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -95,22 +106,30 @@ def index():
   Handles GET calls to "/", which displays HTML.
   Handles POST data calls to "/", which saves off sensor data.
   """
+  global hitcClient
   if request.method == "GET":
     return redirect(url_for("static", filename="index.html"))
   else:
     data = request.json
-    modelIds = [m.guid for m in hitcClient.get_all_models()]
-    modelId = data["component"] + '_' +  data["stream"]
-    if modelId not in modelIds:
-      createModelFromDataPoint(modelId, data)
-    htmResult = runOneDataPoint(modelId, data)
-    saveResult(htmResult, data)
+    if hitcClient is not None:
+      modelIds = [m.guid for m in hitcClient.get_all_models()]
+      modelId = data["component"] + '_' +  data["stream"]
+      if modelId not in modelIds:
+        createModelFromDataPoint(modelId, data)
+      htmResult = runOneDataPoint(modelId, data)
+      saveResult(htmResult, data)
+    else:
+      saveResult(None, data)
     return json.dumps({"result": "success"})
 
 
 @app.route("/_models", methods=["GET"])
 def models():
-  modelIds = [m.guid for m in hitcClient.get_all_models()]
+  global hitcClient
+  if hitcClient is not None:
+    modelIds = [m.guid for m in hitcClient.get_all_models()]
+  else:
+    modelIds = []
   return json.dumps(modelIds)
 
 
@@ -130,22 +149,18 @@ def getSensorData(measurement, component):
   )
   return json.dumps(sensor)
 
-
-# if __name__ == "__main__":
-#   parser = createOptionsParser()
-#   (options, args) = parser.parse_args(sys.argv[1:])
-#   if not options.htmDisabled:
-#     hitcClient = HITC(HITC_URL)
-#   hostString = "0.0.0.0:{0}".format(options.port)
-#   print "Starting on {0}".format(hostString)
-#   # app = web.application(urls, globals())
-#   app = MyApplication(urls, globals())
-#   app.run(options.port)
-
-
-# Start here
+##############
+# Start here #
+##############
 
 if __name__ == "__main__":
   global hitcClient
-  hitcClient = HITC(getHitcUrl())
-  app.run(debug=True, port=8080)
+  parser = createOptionsParser()
+  (options, args) = parser.parse_args(sys.argv[1:])
+  print options
+  if options.htmDisabled:
+    print "HTM IS DISABLED!"
+    hitcClient = None
+  else:
+    hitcClient = HITC(getHitcUrl())
+  app.run(debug=options.debug, port=options.port)

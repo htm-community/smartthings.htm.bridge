@@ -59,9 +59,15 @@ def saveSensorOnly(point):
 
 
 def saveResult(result, point):
-  print "Saving data and HTM result"
-  anomalyScore = result["inferences"]["anomalyScore"]
-  anomalyLikelihood = result["anomalyLikelihood"]
+  anomalyScore = None
+  anomalyLikelihood = None
+
+  if result is not None:
+    print "Saving HTM result"
+    anomalyScore = result["inferences"]["anomalyScore"]
+    anomalyLikelihood = result["anomalyLikelihood"]
+
+  print "Saving sensor data point"
 
   timezone = "unknown"
   if "timezone" in point:
