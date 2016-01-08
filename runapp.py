@@ -1,31 +1,81 @@
+import sys
 import os
 import json
 import time
 from datetime import datetime
 
+from optparse import OptionParser
+
 from hitcpy import HITC
 
-import web
+from flask import Flask, url_for, redirect, request
 
-from influxclient import saveResult, listSensors, getSensorData
+from influxclient import InfluxDbSensorClient
 
 
+DEFAULT_PORT = 8080
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
 
-HITC_URL = os.environ["HITC"]
+# HTM In The Cloud Client is declared here because there is an option NOT to use
+# it at all, so it could be None.
+global hitcClient
+global influxClient
 
-urls = (
-  "/", "Index",
-  "/_models", "Models",
-  "/_data/sensors", "SensorsData",
-  "/_data/sensor/(.+)/(.+)", "SensorData"
-)
-app = web.application(urls, globals())
-render = web.template.render("templates/")
-hitcClient = HITC(HITC_URL)
+app = Flask(__name__)
 
-# Utility functions
+#####################
+# Utility functions #
+#####################
+
+def getHitcUrl():
+  url = os.environ["HITC"]
+  if url.endswith("/"):
+    url = url[:-1]
+  return url
+
+
+def createOptionsParser():
+  # Options parsing.
+  parser = OptionParser(
+    usage="%prog [options]\n\n"
+          """
+  This is a web server that accepts sensor data posted via HTTP and:
+    - stores it into an InfluxDB
+    - optionally passes it into HTM via HITC
+    - displays charts of the data over time
+          """
+  )
+  parser.add_option(
+    "-t",
+    "--disable-htm",
+    action="store_true",
+    default=False,
+    dest="htmDisabled",
+    help="Disable passing all data through HTM server.")
+  parser.add_option(
+    "-s",
+    "--ssl",
+    action="store_true",
+    default=False,
+    dest="ssl",
+    help="Connect to InfluxDB with SSL.")
+  parser.add_option(
+    "-d",
+    "--debug",
+    action="store_true",
+    default=False,
+    dest="debug",
+    help="Starts server in debug mode.")
+  parser.add_option(
+    "-p",
+    "--port",
+    type="int",
+    default=DEFAULT_PORT,
+    dest="port",
+    help="Port to run server on.")
+  return parser
+
 
 def createModelFromDataPoint(modelId, point):
   with open("anomaly_params.json") as inputParams:
@@ -55,52 +105,80 @@ def getSensorIds(sensors):
   return sorted(list(set(sensorIds)))
 
 
-# HTTP Handlers
+#################
+# HTTP Handlers #
+#################
 
-class Models:
-
-  def GET(self):
-    modelIds = [m.guid for m in hitcClient.get_all_models()]
-    return json.dumps(modelIds)
-
-
-class Index:
-
-  def GET(self):
-    raise web.seeother('/static/index.html')
-
-  def POST(self):
-    data = json.loads(web.data())
-    modelIds = [m.guid for m in hitcClient.get_all_models()]
-    modelId = data["component"] + '_' +  data["stream"]
-    if modelId not in modelIds:
-      createModelFromDataPoint(modelId, data)
-    htmResult = runOneDataPoint(modelId, data)
-    saveResult(htmResult, data)
+@app.route("/", methods=["GET", "POST"])
+def index():
+  """
+  Handles GET calls to "/", which displays HTML.
+  Handles POST data calls to "/", which saves off sensor data.
+  """
+  global hitcClient
+  if request.method == "GET":
+    return redirect(url_for("static", filename="index.html"))
+  else:
+    data = request.json
+    if hitcClient is not None:
+      modelIds = [m.guid for m in hitcClient.get_all_models()]
+      modelId = data["component"] + '_' +  data["stream"]
+      if modelId not in modelIds:
+        createModelFromDataPoint(modelId, data)
+      htmResult = runOneDataPoint(modelId, data)
+      influxClient.saveResult(htmResult, data)
+    else:
+      influxClient.saveResult(None, data)
     return json.dumps({"result": "success"})
 
 
-class SensorData:
-
-  def GET(self, measurement, component):
-    limit = None
-    since = None
-    query = web.input()
-    if "limit" in query:
-      limit = query["limit"]
-    if "since" in query:
-      since = query["since"]
-    sensor = getSensorData(measurement, component, limit=limit, since=since)
-    return json.dumps(sensor)
+@app.route("/_models", methods=["GET"])
+def models():
+  global hitcClient
+  if hitcClient is not None:
+    modelIds = [m.guid for m in hitcClient.get_all_models()]
+  else:
+    modelIds = []
+  return json.dumps(modelIds)
 
 
-class SensorsData:
+@app.route("/_data/sensors", methods=["GET"])
+def getSensorList():
+  return json.dumps(getSensorIds(influxClient.listSensors()))
 
-  def GET(self):
-    return json.dumps(getSensorIds(listSensors()))
 
+@app.route("/_data/sensor/<measurement>/<component>", methods=["GET"])
+def getSensorData(measurement, component):
+  query = request.args
+  sensor = influxClient.getSensorData(
+    measurement,
+    component,
+    limit=query.get("limit"),
+    since=query.get("since")
+  )
+  return json.dumps(sensor)
 
-# Start here
+##############
+# Start here #
+##############
 
 if __name__ == "__main__":
-  app.run()
+  global hitcClient
+  parser = createOptionsParser()
+  (options, args) = parser.parse_args(sys.argv[1:])
+  print options
+  if options.htmDisabled:
+    print "HTM IS DISABLED!"
+    hitcClient = None
+  else:
+    hitcClient = HITC(getHitcUrl())
+
+  host = os.environ["INFLUX_HOST"]
+  port = os.environ["INFLUX_PORT"]
+  user = os.environ["INFLUX_USER"]
+  passwd = os.environ["INFLUX_PASS"]
+  db = "smartthings"
+  sensorDb = "smartthings_sensor_only"
+  influxClient = InfluxDbSensorClient(host, port, user, passwd, db, sensorDb, options.ssl)
+
+  app.run(debug=options.debug, port=options.port)
