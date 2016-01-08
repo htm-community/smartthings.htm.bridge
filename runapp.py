@@ -10,7 +10,7 @@ from hitcpy import HITC
 
 from flask import Flask, url_for, redirect, request
 
-from influxclient import saveResult, listSensors, getSensorData as getSavedSensorData
+from influxclient import InfluxDbSensorClient
 
 
 DEFAULT_PORT = 8080
@@ -20,6 +20,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # HTM In The Cloud Client is declared here because there is an option NOT to use
 # it at all, so it could be None.
 global hitcClient
+global influxClient
 
 app = Flask(__name__)
 
@@ -53,6 +54,13 @@ def createOptionsParser():
     dest="htmDisabled",
     help="Disable passing all data through HTM server.")
   parser.add_option(
+    "-s",
+    "--ssl",
+    action="store_true",
+    default=False,
+    dest="ssl",
+    help="Connect to InfluxDB with SSL.")
+  parser.add_option(
     "-d",
     "--debug",
     action="store_true",
@@ -62,6 +70,7 @@ def createOptionsParser():
   parser.add_option(
     "-p",
     "--port",
+    type="int",
     default=DEFAULT_PORT,
     dest="port",
     help="Port to run server on.")
@@ -117,9 +126,9 @@ def index():
       if modelId not in modelIds:
         createModelFromDataPoint(modelId, data)
       htmResult = runOneDataPoint(modelId, data)
-      saveResult(htmResult, data)
+      influxClient.saveResult(htmResult, data)
     else:
-      saveResult(None, data)
+      influxClient.saveResult(None, data)
     return json.dumps({"result": "success"})
 
 
@@ -135,13 +144,13 @@ def models():
 
 @app.route("/_data/sensors", methods=["GET"])
 def getSensorList():
-  return json.dumps(getSensorIds(listSensors()))
+  return json.dumps(getSensorIds(influxClient.listSensors()))
 
 
 @app.route("/_data/sensor/<measurement>/<component>", methods=["GET"])
 def getSensorData(measurement, component):
   query = request.args
-  sensor = getSavedSensorData(
+  sensor = influxClient.getSensorData(
     measurement,
     component,
     limit=query.get("limit"),
@@ -163,4 +172,13 @@ if __name__ == "__main__":
     hitcClient = None
   else:
     hitcClient = HITC(getHitcUrl())
+
+  host = os.environ["INFLUX_HOST"]
+  port = os.environ["INFLUX_PORT"]
+  user = os.environ["INFLUX_USER"]
+  passwd = os.environ["INFLUX_PASS"]
+  db = "smartthings"
+  sensorDb = "smartthings_sensor_only"
+  influxClient = InfluxDbSensorClient(host, port, user, passwd, db, sensorDb, options.ssl)
+
   app.run(debug=options.debug, port=options.port)
