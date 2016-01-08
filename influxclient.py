@@ -13,16 +13,20 @@ INFLUX_PASS = os.environ["INFLUX_PASS"]
 INFLUX_DB = "smartthings"
 INFLUX_DB_BACKUP = "smartthings_sensor_only"
 
-print("Connecting to {0}:{1}@{2}:{3}".format(
+# TODO: make this easier to switch on in production.
+SSL = False
+
+print("Connecting to InfluxDB at {0}:{1}@{2}:{3}".format(
   INFLUX_USER, INFLUX_PASS, INFLUX_HOST, INFLUX_PORT
 ))
+
 client = InfluxDBClient(
   host=INFLUX_HOST,
   port=INFLUX_PORT,
   username=INFLUX_USER,
   password=INFLUX_PASS,
   database=INFLUX_DB,
-  ssl=True
+  ssl=SSL
 )
 backupClient = InfluxDBClient(
   host=INFLUX_HOST,
@@ -30,7 +34,7 @@ backupClient = InfluxDBClient(
   username=INFLUX_USER,
   password=INFLUX_PASS,
   database=INFLUX_DB_BACKUP,
-  ssl=True
+  ssl=SSL
 )
 
 
