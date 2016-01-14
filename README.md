@@ -17,6 +17,7 @@ INFLUX_USER=username
 INFLUX_PASS=password
 ```
 
-Run with bash:
+Run:
 
-    bash run
+    python runapp.py
+    
