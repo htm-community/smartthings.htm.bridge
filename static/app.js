@@ -136,6 +136,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
       scope.view.fieldStates = [];
       scope.view.loading = false;
+      scope.view.data;
 
 
 
@@ -263,6 +264,68 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         }
       };
 
+      // highlight areas where a select function value crosses a threshold
+      // used in dygraph's underlayCallback
+      var highlightAnomaly = function(canvas, area, g) {
+
+        var timeIdx = 0;
+
+        // draw rectangle on x0..x1
+        function highlight_period(x_start, x_end, color) {
+          var canvas_left_x = g.toDomXCoord(x_start);
+          var canvas_right_x = g.toDomXCoord(x_end);
+          var canvas_width = canvas_right_x - canvas_left_x;
+          canvas.fillStyle = color;
+          canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
+        }
+
+        // find x values matching condition on y-value
+        // params: data (all fields), watchedFieldName (string), threshold (for condition >thr)
+        // return array with indices of anomalies
+        function find_where(data, watchedFieldName, threshold) {
+          var results = [];
+          var fnIdx = 2;
+          /*
+          if (fnIdx === -1) {
+            handleError("Highlighting cannot work, field anomalyScore not found!", "danger", true);
+            return [];
+          }*/
+          for (var i = 0; i < data.length; i++) {
+            var value = data[i][fnIdx];
+            // the condition is here
+            if (value >= 0.9) {
+              var time = data[i][timeIdx];
+              //console.log("Found anomaly at "+time+" with value "+value);
+              results.push(time);
+            }
+          }
+          return results;
+        } //end find_where
+
+        //highlight_period(2, 5, yellow); //test
+        // find relevant points
+        //for (var i = 0; i < $scope.view.fieldState.length; i++) {
+          var selected, modDt, color, field;
+          field = $scope.view.fieldState[fnIdx];
+          //if (field.highlighted === true && field.highlightThreshold !== null) {
+            selected = find_where($scope.view.data);
+            // compute optimal/visible high. radius as 1% of screen area
+            modDt = 0.01 * $scope.view.data.length;
+            // plot all of them
+            var transparency = 0.4; // min/max opacity for overlapping highs
+            color = field.color.replace("rgb", "rgba").replace(")", "," + transparency + ")");
+            var lastHigh = -1;
+            for (var x = 0; x < selected.length; x++) {
+              if(selected[x] - modDt >= lastHigh) {
+                highlight_period(selected[x] - modDt, selected[x] + modDt, color);
+                lastHigh = selected[x] + modDt;
+              }
+            }
+          //}
+        //}
+
+      };
+
       var setColors = function(colors) {
         for (i = 0; i < colors.length; i++) {
           scope.view.fieldStates[i].color = colors[i];
@@ -276,6 +339,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       var preprocessData = function(data) {
         removeStringData(data);
         setDates(data);
+        $scope.view.data = data.series[0].values;
       };
 
       // load the data
@@ -347,7 +411,8 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
                 setColors(graph.getColors());
               }
               scope.view.loading = false;
-            }
+            }/*,
+            underlayCallback: highlightAnomaly*/
         });
       };
 
