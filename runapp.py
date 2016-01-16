@@ -57,7 +57,7 @@ def createOptionsParser():
     "-s",
     "--ssl",
     action="store_true",
-    default=False,
+    default=True,
     dest="ssl",
     help="Connect to InfluxDB with SSL.")
   parser.add_option(
