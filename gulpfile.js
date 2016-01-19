@@ -49,7 +49,7 @@ gulp.task('appjs', ['clean'], function() {
     .pipe(jshint.reporter('default'))
     .pipe(addStream.obj(prepareTemplates()))
     .pipe(concat('app.js'))
-    //.pipe(uglify())
+    .pipe(uglify())
     .pipe(gulp.dest('static'));
 });
 

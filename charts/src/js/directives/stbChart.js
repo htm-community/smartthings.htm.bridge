@@ -1,4 +1,4 @@
-angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', '$timeout', function($http, stbUtils, CONFIG, $timeout) {
+angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', function($http, stbUtils, CONFIG) {
   return {
     restrict: 'EA',
     scope: {
@@ -9,8 +9,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', '$ti
     link: function(scope, element, attrs) {
 
       var i,
-          watchers = {},
-          timers = {};
+          watchers = {};
 
       // scope.view should be inherited from the parent scope, but if it is not:
       if (!scope.view) {
@@ -161,7 +160,6 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', '$ti
         */
 
         var timeIdx = 0;
-        var highlights = ["anomalyScore","anomalyLikelihood"];
 
         // draw rectangle on x0..x1
         function highlight_period(x_start, x_end, color) {
