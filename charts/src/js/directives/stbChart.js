@@ -23,6 +23,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
       scope.view.fieldStates = [];
       scope.view.loading = false;
+      scope.view.data = null;
 
 
 
@@ -140,13 +141,95 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           if (data.series[0].columns[i] === "time") {
             continue;
           }
+          var seriesColor = CONFIG.CHART_FIELDS[data.series[0].columns[i]].color || "rgb(0,0,0)";
           scope.view.fieldStates.push({
             name: data.series[0].columns[i],
             visible: true,
             id: counter,
-            color : "rgb(0,0,0)"
+            color : seriesColor
           });
           counter++;
+        }
+      };
+
+      var highlightAnomaly = function(canvas, area, g) {
+        /* draws a line for the threshold
+        canvas.fillStyle = "#C4F605";
+        var thresh = g.toDomYCoord(CONFIG.ANOMALY_THRESHOLD,1);
+        canvas.fillRect(area.x, thresh, area.w, 1);
+        */
+
+        var timeIdx = 0;
+
+        // draw rectangle on x0..x1
+        function highlight_period(x_start, x_end, color) {
+          var width = x_end - x_start;
+          canvas.fillStyle = color;
+          canvas.fillRect(x_start, area.y, width, area.h);
+        }
+
+        for (var i = 0; i < scope.view.fieldStates.length; i++) {
+          var start,
+              end,
+              first,
+              last,
+              color,
+              field,
+              fieldIndex,
+              threshold,
+              transparency,
+              previousIndex;
+
+          if (CONFIG.THRESHOLD_HIGHLIGHT_FIELDS.indexOf(scope.view.fieldStates[i].name) !== -1 && scope.view.fieldStates[i].visible) {
+            field = scope.view.fieldStates[i];
+            fieldIndex = scope.view.data.series[0].columns.indexOf(field.name);
+            if (fieldIndex < 0) {
+              return;
+            }
+            color = field.color.replace("rgb", "rgba").replace(")", ",0.5)");
+            start = null;
+            end = null;
+            last = null;
+            first = null;
+            var data = scope.view.data.series[0].values;
+            for (var t = 0; t < data.length; t++) {
+              if (data[t][fieldIndex] >= CONFIG.ANOMALY_THRESHOLD && start === null) {
+                start = g.toDomXCoord(data[t][0].getTime());
+                first = t;
+              }
+              if (data[t][fieldIndex] >= CONFIG.ANOMALY_THRESHOLD) {
+                last = t;
+              }
+              if (start !== null && (data[t][fieldIndex] < CONFIG.ANOMALY_THRESHOLD || t >= data.length - 1)) {
+                // get leading slope
+                if (t === last) {
+                  end = g.toDomXCoord(data[last][0].getTime());
+                } else {
+                  var x1 = g.toDomXCoord(data[t][0].getTime()) - g.toDomXCoord(data[last][0].getTime());
+                  var y1 = data[last][fieldIndex] - data[t][fieldIndex];
+                  var z = Math.atan(x1 / y1);
+                  var y2 = data[last][fieldIndex] - CONFIG.ANOMALY_THRESHOLD;
+                  var x2 = y2 * Math.tan(z);
+                  end = g.toDomXCoord(data[last][0].getTime()) + x2;
+                }
+                // get trailing slope
+                previousIndex = first - 1;
+                if (previousIndex >= 0) {
+                  var x3 = start - g.toDomXCoord(data[previousIndex][0].getTime());
+                  var y3 = data[first][fieldIndex] - data[previousIndex][fieldIndex];
+                  var z2 = Math.atan(x3 / y3);
+                  var y4 = data[first][fieldIndex] - CONFIG.ANOMALY_THRESHOLD;
+                  var x4 = y4 * Math.tan(z2);
+                  start = start - x4;
+                }
+                highlight_period(start, end, color);
+                start = null;
+                end = null;
+                last = null;
+                first = null;
+              }
+            }
+          }
         }
       };
 
@@ -163,6 +246,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       var preprocessData = function(data) {
         removeStringData(data);
         setDates(data);
+        scope.view.data = data;
       };
 
       // load the data
@@ -208,18 +292,21 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           data.series[0].values,
           {
             labels: data.series[0].columns,
+            sigFigs: 5,
+
             series: {
               value: {
                 strokeWidth: 2,
-                strokePattern: [4, 1]
+                strokePattern: [4, 1],
+                color: CONFIG.CHART_FIELDS.value.color
               },
               anomalyScore: {
                 axis: 'y2',
-                color: 'orange'
+                color: CONFIG.CHART_FIELDS.anomalyScore.color
               },
               anomalyLikelihood: {
                 axis: 'y2',
-                color: 'red'
+                color: CONFIG.CHART_FIELDS.anomalyLikelihood.color
               }
             },
             axes: {
@@ -234,7 +321,8 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
                 setColors(graph.getColors());
               }
               scope.view.loading = false;
-            }
+            },
+            underlayCallback: highlightAnomaly
         });
       };
 
