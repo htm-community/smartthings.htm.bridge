@@ -1,4 +1,4 @@
-angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', function($http, stbUtils, CONFIG) {
+angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', '$timeout', function($http, stbUtils, CONFIG, $timeout) {
   return {
     restrict: 'EA',
     scope: {
@@ -9,7 +9,8 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
     link: function(scope, element, attrs) {
 
       var i,
-          watchers = {};
+          watchers = {},
+          timers = {};
 
       // scope.view should be inherited from the parent scope, but if it is not:
       if (!scope.view) {
@@ -23,7 +24,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.sinceOptions = CONFIG.SINCE_OPTIONS;
       scope.view.fieldStates = [];
       scope.view.loading = false;
-      scope.view.data;
+      scope.view.data = null;
 
 
 
@@ -141,76 +142,97 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           if (data.series[0].columns[i] === "time") {
             continue;
           }
+          var seriesColor = CONFIG.CHART_FIELDS[data.series[0].columns[i]].color || "rgb(0,0,0)";
           scope.view.fieldStates.push({
             name: data.series[0].columns[i],
             visible: true,
             id: counter,
-            color : "rgb(0,0,0)"
+            color : seriesColor
           });
           counter++;
         }
       };
 
-      // highlight areas where a select function value crosses a threshold
-      // used in dygraph's underlayCallback
       var highlightAnomaly = function(canvas, area, g) {
+        /* draws a line for the threshold
+        canvas.fillStyle = "#C4F605";
+        var thresh = g.toDomYCoord(CONFIG.ANOMALY_THRESHOLD,1);
+        canvas.fillRect(area.x, thresh, area.w, 1);
+        */
 
         var timeIdx = 0;
+        var highlights = ["anomalyScore","anomalyLikelihood"];
 
         // draw rectangle on x0..x1
         function highlight_period(x_start, x_end, color) {
-          var canvas_left_x = g.toDomXCoord(x_start);
-          var canvas_right_x = g.toDomXCoord(x_end);
-          var canvas_width = canvas_right_x - canvas_left_x;
+          var width = x_end - x_start;
           canvas.fillStyle = color;
-          canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
+          canvas.fillRect(x_start, area.y, width, area.h);
         }
 
-        // find x values matching condition on y-value
-        // params: data (all fields), watchedFieldName (string), threshold (for condition >thr)
-        // return array with indices of anomalies
-        function find_where(data, watchedFieldName, threshold) {
-          var results = [];
-          var fnIdx = 2;
-          /*
-          if (fnIdx === -1) {
-            handleError("Highlighting cannot work, field anomalyScore not found!", "danger", true);
-            return [];
-          }*/
-          for (var i = 0; i < data.length; i++) {
-            var value = data[i][fnIdx];
-            // the condition is here
-            if (value >= 0.9) {
-              var time = data[i][timeIdx];
-              //console.log("Found anomaly at "+time+" with value "+value);
-              results.push(time);
-            }
-          }
-          return results;
-        } //end find_where
+        for (var i = 0; i < scope.view.fieldStates.length; i++) {
+          var start,
+              end,
+              first,
+              last,
+              color,
+              field,
+              fieldIndex,
+              threshold,
+              transparency,
+              previousIndex;
 
-        //highlight_period(2, 5, yellow); //test
-        // find relevant points
-        //for (var i = 0; i < $scope.view.fieldState.length; i++) {
-          var selected, modDt, color, field;
-          field = $scope.view.fieldState[fnIdx];
-          //if (field.highlighted === true && field.highlightThreshold !== null) {
-            selected = find_where($scope.view.data);
-            // compute optimal/visible high. radius as 1% of screen area
-            modDt = 0.01 * $scope.view.data.length;
-            // plot all of them
-            var transparency = 0.4; // min/max opacity for overlapping highs
-            color = field.color.replace("rgb", "rgba").replace(")", "," + transparency + ")");
-            var lastHigh = -1;
-            for (var x = 0; x < selected.length; x++) {
-              if(selected[x] - modDt >= lastHigh) {
-                highlight_period(selected[x] - modDt, selected[x] + modDt, color);
-                lastHigh = selected[x] + modDt;
+          if (CONFIG.THRESHOLD_HIGHLIGHT_FIELDS.indexOf(scope.view.fieldStates[i].name) !== -1 && scope.view.fieldStates[i].visible) {
+            field = scope.view.fieldStates[i];
+            fieldIndex = scope.view.data.series[0].columns.indexOf(field.name);
+            if (fieldIndex < 0) {
+              return;
+            }
+            color = field.color.replace("rgb", "rgba").replace(")", ",0.5)");
+            start = null;
+            end = null;
+            last = null;
+            first = null;
+            var data = scope.view.data.series[0].values;
+            for (var t = 0; t < data.length; t++) {
+              if (data[t][fieldIndex] >= CONFIG.ANOMALY_THRESHOLD && start === null) {
+                start = g.toDomXCoord(data[t][0].getTime());
+                first = t;
+              }
+              if (data[t][fieldIndex] >= CONFIG.ANOMALY_THRESHOLD) {
+                last = t;
+              }
+              if (start !== null && (data[t][fieldIndex] < CONFIG.ANOMALY_THRESHOLD || t >= data.length - 1)) {
+                // get leading slope
+                if (t === last) {
+                  end = g.toDomXCoord(data[last][0].getTime());
+                } else {
+                  var x1 = g.toDomXCoord(data[t][0].getTime()) - g.toDomXCoord(data[last][0].getTime());
+                  var y1 = data[last][fieldIndex] - data[t][fieldIndex];
+                  var z = Math.atan(x1 / y1);
+                  var y2 = data[last][fieldIndex] - CONFIG.ANOMALY_THRESHOLD;
+                  var x2 = y2 * Math.tan(z);
+                  end = g.toDomXCoord(data[last][0].getTime()) + x2;
+                }
+                // get trailing slope
+                previousIndex = first - 1;
+                if (previousIndex >= 0) {
+                  var x3 = start - g.toDomXCoord(data[previousIndex][0].getTime());
+                  var y3 = data[first][fieldIndex] - data[previousIndex][fieldIndex];
+                  var z2 = Math.atan(x3 / y3);
+                  var y4 = data[first][fieldIndex] - CONFIG.ANOMALY_THRESHOLD;
+                  var x4 = y4 * Math.tan(z2);
+                  start = start - x4;
+                }
+                highlight_period(start, end, color);
+                start = null;
+                end = null;
+                last = null;
+                first = null;
               }
             }
-          //}
-        //}
-
+          }
+        }
       };
 
       var setColors = function(colors) {
@@ -226,7 +248,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       var preprocessData = function(data) {
         removeStringData(data);
         setDates(data);
-        $scope.view.data = data.series[0].values;
+        scope.view.data = data;
       };
 
       // load the data
@@ -272,18 +294,21 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           data.series[0].values,
           {
             labels: data.series[0].columns,
+            sigFigs: 5,
+
             series: {
               value: {
                 strokeWidth: 2,
-                strokePattern: [4, 1]
+                strokePattern: [4, 1],
+                color: CONFIG.CHART_FIELDS.value.color
               },
               anomalyScore: {
                 axis: 'y2',
-                color: 'orange'
+                color: CONFIG.CHART_FIELDS.anomalyScore.color
               },
               anomalyLikelihood: {
                 axis: 'y2',
-                color: 'red'
+                color: CONFIG.CHART_FIELDS.anomalyLikelihood.color
               }
             },
             axes: {
@@ -298,8 +323,8 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
                 setColors(graph.getColors());
               }
               scope.view.loading = false;
-            }/*,
-            underlayCallback: highlightAnomaly*/
+            },
+            underlayCallback: highlightAnomaly
         });
       };
 

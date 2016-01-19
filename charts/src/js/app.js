@@ -4,7 +4,8 @@ angular.module('app', [
   'ui.router',
   'home',
   'sensors',
-  'pageNotFound']);
+  'pageNotFound'
+]);
 
 // some Settings:
 angular.module('app').constant('CONFIG', {
@@ -34,7 +35,20 @@ angular.module('app').constant('CONFIG', {
   }, {
     number: 1,
     units: 'week'
-  }]
+  }],
+  'CHART_FIELDS': {
+    'anomalyScore': {
+      color: 'rgb(201,12,6)'
+    },
+    'anomalyLikelihood': {
+      color: 'rgb(204,122,5)'
+    },
+    'value': {
+      color: 'rgb(4,138,191)'
+    }
+  },
+  'ANOMALY_THRESHOLD': 0.9,
+  'THRESHOLD_HIGHLIGHT_FIELDS': ["anomalyScore", "anomalyLikelihood"]
 });
 
 angular.module('app').config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
