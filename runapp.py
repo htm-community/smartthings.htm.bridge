@@ -27,14 +27,6 @@ def getHitcUrl():
   return url
 
 
-def createModel(hitcClient, modelId):
-  with open("anomaly_params.json") as inputParams:
-    modelSpec = json.loads(inputParams.read())
-  modelSpec["guid"] = modelId
-  createdModel = hitcClient.create_model(modelSpec)
-  print "Created {0}".format(createdModel)
-
-
 def runOneDataPoint(hitcClient, modelId, point):
   timeString = point["time"]
   timestamp = int(time.mktime(datetime.strptime(timeString, DATE_FORMAT).timetuple()))
@@ -52,19 +44,6 @@ def getHitcClient():
   if hitcUrl is not None:
     hitcClient = HITC(hitcUrl)
   return hitcClient
-
-
-def getInfluxClient():
-  ssl = False
-  if "USE_SSL" in os.environ:
-    ssl = True
-  host = os.environ["INFLUX_HOST"]
-  influxPort = os.environ["INFLUX_PORT"]
-  user = os.environ["INFLUX_USER"]
-  passwd = os.environ["INFLUX_PASS"]
-  db = "smartthings"
-  sensorDb = "smartthings_sensor_only"
-  return InfluxDbSensorClient(host, influxPort, user, passwd, db, sensorDb, ssl)
 
 
 def getSensorIds(sensors):
@@ -107,7 +86,10 @@ class Index:
       modelIds = [m.guid for m in hitcClient.get_all_models()]
       modelId = data["component"] + '_' +  data["stream"]
       if modelId not in modelIds:
-        createModel(hitcClient, modelId)
+        with open("anomaly_params.json") as inputParams:
+          modelSpec = json.loads(inputParams.read())
+          modelSpec["guid"] = modelId
+          hitcClient.create_model(modelSpec)
       htmResult = runOneDataPoint(hitcClient, modelId, data)
       saveResult(htmResult, data)
     else:
