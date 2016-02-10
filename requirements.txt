@@ -1,3 +1,4 @@
 web.py==0.37
 influxdb==2.10.0
 hitcpy==0.1.1
+iso8601==0.1.11

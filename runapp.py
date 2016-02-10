@@ -27,12 +27,14 @@ def getHitcUrl():
   return url
 
 
-def runOneDataPoint(hitcClient, modelId, point):
-  timeString = point["time"]
-  timestamp = int(time.mktime(datetime.strptime(timeString, DATE_FORMAT).timetuple()))
+def runOneDataPoint(hitcClient, modelId, inputTime, value):
+  if isinstance(inputTime, basestring):
+    timestamp = int(time.mktime(datetime.strptime(inputTime, DATE_FORMAT).timetuple()))
+  else:
+    timestamp = int(time.mktime(inputTime.timetuple()))
   dataRow = {
     "c0": timestamp,
-    "c1": point["value"]
+    "c1": value
   }
   # There is only one value in the result list, so pop() it off.
   return hitcClient.get_model(modelId).run(dataRow).pop()
@@ -90,7 +92,9 @@ class Index:
           modelSpec = json.loads(inputParams.read())
           modelSpec["guid"] = modelId
           hitcClient.create_model(modelSpec)
-      htmResult = runOneDataPoint(hitcClient, modelId, data)
+      htmResult = runOneDataPoint(
+        hitcClient, modelId, data["time"], data["value"]
+      )
       saveResult(htmResult, data)
     else:
       saveResult(None, data)
