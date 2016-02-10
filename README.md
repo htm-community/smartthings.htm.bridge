@@ -21,3 +21,23 @@ Run:
 
     python runapp.py
     
+
+## Command Line Interface
+
+You can use this to interact with HITC. I use it to manage models. Here's what it can do.
+
+#### Create a model
+
+    ./cli.py models:create --guid <guid> --paramPath <path-to-params-json>
+
+#### List models
+
+    ./cli.py models:list
+
+#### Delete a model
+
+    ./cli.py models:delete --guid <guid>
+
+#### Delete all models
+
+    ./cli.py models:deleteAll
