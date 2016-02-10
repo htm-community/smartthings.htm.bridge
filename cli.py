@@ -19,6 +19,7 @@ import json
 from optparse import OptionParser
 
 from runapp import getHitcClient
+from influxclient import getSensorData
 
 
 global verbose
@@ -51,6 +52,21 @@ def createOptionsParser():
     "--param-path",
     dest="paramPath",
     help="Path to model params JSON file.")
+  parser.add_option(
+    "-c",
+    "--component",
+    dest="component",
+    help="Sensor component.")
+  parser.add_option(
+    "-m",
+    "--measurement",
+    dest="measurement",
+    help="Sensor measurement.")
+  parser.add_option(
+    "-l",
+    "--limit",
+    dest="limit",
+    help="Sensor data limit when fetching.")
   
   return parser
 
@@ -96,6 +112,18 @@ class models:
     for model in self.client.get_all_models():
       model.delete()
       print "Deleted model '%s'" % model.guid
+  
+  
+  def loadData(self, **kwargs):
+    data = getSensorData(
+      kwargs["measurement"], kwargs["component"], 
+      limit=kwargs["limit"], sensorOnly=True
+    )["series"][0]
+    values = data["values"]
+    columns = data["columns"]
+    print columns
+    for v in values:
+      print v
 
 
 

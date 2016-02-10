@@ -85,7 +85,7 @@ def listSensors():
   return client.get_list_series()
 
 
-def getSensorData(measurement, component, limit=None, since=None):
+def getSensorData(measurement, component, limit=None, since=None, sensorOnly=False):
   query = "SELECT * FROM " + measurement \
         + " WHERE component = '" + component + "'"
   if since is not None:
@@ -93,7 +93,11 @@ def getSensorData(measurement, component, limit=None, since=None):
   query += " GROUP BY * ORDER BY time DESC"
   if limit is not None:
     query += " LIMIT {0}".format(limit)
-  response = client.query(query)
+  
+  if sensorOnly:
+    response = backupClient.query(query)
+  else:
+    response = client.query(query)
 
   # Don't process empty responses
   if len(response) < 1:
