@@ -21,7 +21,7 @@ from optparse import OptionParser
 import iso8601
 
 from runapp import getHitcClient, runOneDataPoint
-from influxclient import getSensorData
+from influxclient import getSensorData, listSensors, queryMeasurement
 
 
 global verbose
@@ -132,23 +132,43 @@ class models:
     
 
 
-class data:
+class sensors:
 
   
   def __init__(self, client):
     self.client = client
 
 
-  def list(self, **kwargs):
-    data = getSensorData(
+  def data(self, **kwargs):
+    data = queryMeasurement(
       kwargs["measurement"], kwargs["component"], 
-      limit=kwargs["limit"], sensorOnly=True
+      limit=kwargs["limit"]
     )["series"][0]
     values = data["values"]
     columns = data["columns"]
     print columns
     for v in values:
       print(v)
+
+
+  def inference(self, **kwargs):
+    data = queryMeasurement(
+      kwargs["measurement"] + "_inference", kwargs["component"], 
+      limit=kwargs["limit"]
+    )["series"][0]
+    values = data["values"]
+    columns = data["columns"]
+    print columns
+    for v in values:
+      print(v)
+
+
+  def list(self, **kwargs):
+    for s in listSensors():
+      name = s["name"]
+      if not name.endswith("_inference"):
+        print "%s\t%s" % (s["tags"][0]["component"], name)
+
 
 
 def extractIntent(command):
