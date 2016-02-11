@@ -24,7 +24,9 @@ Run:
 
 ## Command Line Interface
 
-You can use this to interact with HITC. I use it to manage models. Here's what it can do.
+You can use this to interact with HITC. I use it to manage models and view sensor data. Here's what it can do.
+
+### Models
 
 #### Create a model
 
@@ -45,13 +47,6 @@ You can use this to interact with HITC. I use it to manage models. Here's what i
 
     ./cli.py models:deleteAll
 
-#### List data available for a component measurement
-
-    ./cli.py data:list \
-        --component <component> \
-        --measurement <measurement> \
-        --limit=<limit>
-
 #### Run data through a model
 
     ./cli.py models:loadData \
@@ -59,3 +54,25 @@ You can use this to interact with HITC. I use it to manage models. Here's what i
         --measurement <measurement> \
         --limit=<limit> \
         --guid 2a8cfd76-506c-4544-813e-0a9cac6b473a
+
+## Sensor Data
+
+#### List available sensors
+
+    ./cli.py sensors:list
+
+
+#### List data available for a sensor
+
+    ./cli.py sensors:data \
+        --component <component> \
+        --measurement <measurement> \
+        --limit=<limit>
+
+#### List HTM inferences available for a sensor
+
+    ./cli.py sensors:inference \
+        --component <component> \
+        --measurement <measurement> \
+        --limit=<limit>
+
