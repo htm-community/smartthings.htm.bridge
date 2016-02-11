@@ -6,9 +6,9 @@ from datetime import datetime
 import web
 from hitcpy import HITC
 
-from influxclient import saveResult, listSensors, getSensorData
+from influxclient import SensorClient
 
-
+sensorClient = SensorClient("smartthings_htm_bridge", verbose=True)
 DEFAULT_PORT = 8080
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
@@ -95,9 +95,9 @@ class Index:
       htmResult = runOneDataPoint(
         hitcClient, modelId, data["time"], data["value"]
       )
-      saveResult(htmResult, data)
+      sensorClient.saveResult(htmResult, data)
     else:
-      saveResult(None, data)
+      sensorClient.saveResult(None, data)
     return json.dumps({"result": "success"})
 
 
@@ -115,15 +115,14 @@ class Models:
 class SensorList:
   
   def GET(self):
-    print "hello"
-    return json.dumps(getSensorIds(listSensors()))
+    return json.dumps(getSensorIds(sensorClient.listSensors()))
 
 
 class SensorData:
 
   def GET(self, measurement, component):
     query = web.input(limit=None, since=None)
-    sensor = getSensorData(
+    sensor = sensorClient.getSensorData(
       measurement,
       component,
       limit=query.limit,

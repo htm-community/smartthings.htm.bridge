@@ -21,10 +21,9 @@ from optparse import OptionParser
 import iso8601
 
 from runapp import getHitcClient, runOneDataPoint
-from influxclient import getSensorData, listSensors, queryMeasurement
+from influxclient import SensorClient
 
 
-global verbose
 get_class = lambda x: globals()[x]
 
 def createOptionsParser():
@@ -77,12 +76,13 @@ def createOptionsParser():
 class models:
 
   
-  def __init__(self, client):
-    self.client = client
+  def __init__(self, hitcClient, sensorClient):
+    self._hitcClient = hitcClient
+    self._sensorClient = sensorClient
 
 
   def list(self, **kwargs):
-    models = self.client.get_all_models()
+    models = self._hitcClient.get_all_models()
     if len(models) < 1:
       print "NO MODELS"
     else:
@@ -92,12 +92,15 @@ class models:
 
 
   def create(self, **kwargs):
-    with(open(kwargs["paramPath"], "r")) as paramFile:
+    if kwargs["paramPath"] is None:
+      raise ValueError("User must provide --param-path to model params JSON file.")
+    paramPath = kwargs["paramPath"]
+    with(open(paramPath, "r")) as paramFile:
       params = json.loads(paramFile.read())
       if "guid" in kwargs and kwargs["guid"] is not None:
         params["guid"] = kwargs["guid"]
       try:
-        model = self.client.create_model(params)
+        model = self._hitcClient.create_model(params)
         print "Created model '%s'" % model.guid
       except KeyError:
         print "Model with id '%s' already exists." % kwargs["guid"]
@@ -105,19 +108,19 @@ class models:
 
   def delete(self, **kwargs):
     guid = kwargs["guid"]
-    for model in self.client.get_all_models():
+    for model in self._hitcClient.get_all_models():
       if model.guid == guid:
         model.delete()
         print "Deleted model '%s'" % guid
 
   def deleteAll(self, **kwargs):
-    for model in self.client.get_all_models():
+    for model in self._hitcClient.get_all_models():
       model.delete()
       print "Deleted model '%s'" % model.guid
   
   
   def loadData(self, **kwargs):
-    data = getSensorData(
+    data = self._sensorClient.getSensorData(
       kwargs["measurement"], kwargs["component"], 
       limit=kwargs["limit"], sensorOnly=True
     )["series"][0]
@@ -125,7 +128,7 @@ class models:
     results = []
     for point in data["values"]:
       results.append(runOneDataPoint(
-        self.client, guid, iso8601.parse_date(point[0]), point[1]
+        self._hitcClient, guid, iso8601.parse_date(point[0]), point[1]
       ))
     print "Loaded %i data points into model '%s'." % (len(results), guid)
     
@@ -135,12 +138,13 @@ class models:
 class sensors:
 
   
-  def __init__(self, client):
-    self.client = client
+  def __init__(self, hitcClient, sensorClient):
+    self._hitcClient = hitcClient
+    self._sensorClient = sensorClient
 
 
   def data(self, **kwargs):
-    data = queryMeasurement(
+    data = self._sensorClient.queryMeasurement(
       kwargs["measurement"], kwargs["component"], 
       limit=kwargs["limit"]
     )["series"][0]
@@ -152,7 +156,7 @@ class sensors:
 
 
   def inference(self, **kwargs):
-    data = queryMeasurement(
+    data = self._sensorClient.queryMeasurement(
       kwargs["measurement"] + "_inference", kwargs["component"], 
       limit=kwargs["limit"]
     )["series"][0]
@@ -164,10 +168,10 @@ class sensors:
 
 
   def list(self, **kwargs):
-    for s in listSensors():
+    for s in self._sensorClient.listSensors():
       name = s["name"]
       if not name.endswith("_inference"):
-        print "%s\t%s" % (s["tags"][0]["component"], name)
+        print "component: %s\tmeasurement: %s" % (s["tags"][0]["component"], name)
 
 
 
@@ -176,8 +180,11 @@ def extractIntent(command):
 
 
 def runAction(subject, action, **kwargs):
-  client = getHitcClient()
-  subjectType = get_class(subject)(client)
+  hitcClient = getHitcClient()
+  sensorClient = SensorClient(
+    "smartthings_htm_bridge", verbose=kwargs["verbose"]
+  )
+  subjectType = get_class(subject)(hitcClient, sensorClient)
   actionFunction = getattr(subjectType, action)
   print "\n* * *\n"
   actionFunction(**kwargs)
@@ -185,10 +192,8 @@ def runAction(subject, action, **kwargs):
         
 
 if __name__ == "__main__":
-  global verbose
   parser = createOptionsParser()
   options, args = parser.parse_args(sys.argv[1:])
-  verbose = options.verbose
   if len(args) < 1:
     raise ValueError("Please provide a command.")
   subject, action = extractIntent(args[0])
