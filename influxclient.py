@@ -184,14 +184,29 @@ class SensorClient(object):
                        component,
                        limit=None,
                        since=None,
+                       aggregate=None,
                        database=None):
-    query = "SELECT * FROM " + measurement \
-          + " WHERE component = '" + component + "'"
+    toSelect = "value"
+
+    if aggregate is not None:
+      toSelect = "MEAN(value)"
+
+    query = "SELECT {0} FROM {1} WHERE component = '{2}'".format(toSelect, measurement, component)
+
     if since is not None:
       query += " AND time > {0}s".format(since)
-    query += " GROUP BY * ORDER BY time DESC"
+
+    if aggregate is None:
+      query += " GROUP BY *"
+    else:
+      query += " GROUP BY time({0})".format(aggregate)
+
+    query += " ORDER BY time DESC"
+
     if limit is not None:
       query += " LIMIT {0}".format(limit)
+
+    print query
 
     response = self._client.query(query, database=database)
 
@@ -207,9 +222,9 @@ class SensorClient(object):
     return data
 
 
-  def getSensorData(self, measurement, component, limit=None, since=None):
-    sensorData = self.queryMeasurement(measurement, component, limit, since)
-    inferenceData = self.queryMeasurement(measurement + "_inference", component, limit, since)
+  def getSensorData(self, measurement, component, limit=None, since=None, aggregate=None):
+    sensorData = self.queryMeasurement(measurement, component, limit=limit, since=since, aggregate=aggregate)
+    inferenceData = self.queryMeasurement(measurement + "_inference", component, limit=limit, since=since)
     return zipSensorAndInferenceData(sensorData, inferenceData)
 
 
