@@ -28,14 +28,9 @@ get_class = lambda x: globals()[x]
 
 def createOptionsParser():
   parser = OptionParser(
-    usage="%prog [options]\n\n" +
-    """
-./cli.py models:list
-./cli.py models:delete <guid>
-./cli.py models:create <model-param-path>
-    """
+    usage="%prog <subject>:<action> [options]"
   )
-  
+
   parser.add_option(
     "-v",
     "--verbose",
@@ -68,14 +63,24 @@ def createOptionsParser():
     "--limit",
     dest="limit",
     help="Sensor data limit when fetching.")
-  
+  parser.add_option(
+    "-f",
+    "--from",
+    dest="from",
+    help="InfluxDB database name.")
+  parser.add_option(
+    "-t",
+    "--to",
+    dest="to",
+    help="InfluxDB database name.")
+
   return parser
 
 
 
 class models:
 
-  
+
   def __init__(self, hitcClient, sensorClient):
     self._hitcClient = hitcClient
     self._sensorClient = sensorClient
@@ -117,11 +122,11 @@ class models:
     for model in self._hitcClient.get_all_models():
       model.delete()
       print "Deleted model '%s'" % model.guid
-  
-  
+
+
   def loadData(self, **kwargs):
     data = self._sensorClient.getSensorData(
-      kwargs["measurement"], kwargs["component"], 
+      kwargs["measurement"], kwargs["component"],
       limit=kwargs["limit"], sensorOnly=True
     )["series"][0]
     guid = kwargs["guid"]
@@ -131,13 +136,13 @@ class models:
         self._hitcClient, guid, iso8601.parse_date(point[0]), point[1]
       ))
     print "Loaded %i data points into model '%s'." % (len(results), guid)
-    
-    
+
+
 
 
 class sensors:
 
-  
+
   def __init__(self, hitcClient, sensorClient):
     self._hitcClient = hitcClient
     self._sensorClient = sensorClient
@@ -145,7 +150,7 @@ class sensors:
 
   def data(self, **kwargs):
     data = self._sensorClient.queryMeasurement(
-      kwargs["measurement"], kwargs["component"], 
+      kwargs["measurement"], kwargs["component"],
       limit=kwargs["limit"]
     )["series"][0]
     values = data["values"]
@@ -157,7 +162,7 @@ class sensors:
 
   def inference(self, **kwargs):
     data = self._sensorClient.queryMeasurement(
-      kwargs["measurement"] + "_inference", kwargs["component"], 
+      kwargs["measurement"] + "_inference", kwargs["component"],
       limit=kwargs["limit"]
     )["series"][0]
     values = data["values"]
@@ -174,6 +179,9 @@ class sensors:
         print "component: %s\tmeasurement: %s" % (s["tags"][0]["component"], name)
 
 
+  def transfer(self, **kwargs):
+    self._sensorClient.transfer(**kwargs)
+
 
 def extractIntent(command):
   return command.split(":")
@@ -188,8 +196,8 @@ def runAction(subject, action, **kwargs):
   actionFunction = getattr(subjectType, action)
   print "\n* * *\n"
   actionFunction(**kwargs)
-  
-        
+
+
 
 if __name__ == "__main__":
   parser = createOptionsParser()

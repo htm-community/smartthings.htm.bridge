@@ -31,8 +31,8 @@ You can use this to interact with HITC. I use it to manage models and view senso
 #### Create a model
 
     ./cli.py models:create \
-        --guid <guid> \
-        --paramPath <path-to-params-json>
+        --guid=<guid> \
+        --paramPath=<path-to-params-json>
 
 #### List models
 
@@ -41,7 +41,7 @@ You can use this to interact with HITC. I use it to manage models and view senso
 #### Delete a model
 
     ./cli.py models:delete \
-        --guid <guid>
+        --guid=<guid>
 
 #### Delete all models
 
@@ -50,10 +50,10 @@ You can use this to interact with HITC. I use it to manage models and view senso
 #### Run data through a model
 
     ./cli.py models:loadData \
-        --component <component> \
-        --measurement <measurement> \
+        --component=<component> \
+        --measurement=<measurement> \
         --limit=<limit> \
-        --guid 2a8cfd76-506c-4544-813e-0a9cac6b473a
+        --guid=<guid>
 
 ## Sensor Data
 
@@ -65,14 +65,22 @@ You can use this to interact with HITC. I use it to manage models and view senso
 #### List data available for a sensor
 
     ./cli.py sensors:data \
-        --component <component> \
-        --measurement <measurement> \
+        --component=<component> \
+        --measurement=<measurement> \
         --limit=<limit>
 
 #### List HTM inferences available for a sensor
 
     ./cli.py sensors:inference \
-        --component <component> \
-        --measurement <measurement> \
+        --component=<component> \
+        --measurement=<measurement> \
         --limit=<limit>
 
+#### Transfer sensor data from one DB to another
+
+    ./cli.py sensors:transfer \
+        --from=<fromDB> \
+        --to=<toDb> \
+        --measurement=<measurement> \
+        --component=<component> \
+        --limit=<limit>
