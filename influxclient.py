@@ -1,6 +1,7 @@
 import os
 
 from influxdb import InfluxDBClient
+import iso8601
 
 # This is only necessary for Python < 2.7.9
 # import urllib3.contrib.pyopenssl
@@ -17,10 +18,11 @@ DEFAULT_SSL = "INFLUX_SSL" in os.environ \
 
 
 def zipSensorAndInferenceData(sensorData, inferenceData):
-  # Validate that they are the same length
-  if isinstance(inferenceData, list) or len(sensorData["series"][0]) != len(inferenceData["series"][0]):
+
+  # If inferenceData is empty, just return sensorData
+  if isinstance(inferenceData, list):
     # Just return the sensor data and warn.
-    print "WARNING: sensor and inference data arrays were different sizes. Only returning sensor data."
+    print "WARNING: No HTM inference data available. Only returning sensor data."
     return sensorData
 
   sensorSeries = sensorData["series"][0]
@@ -33,10 +35,24 @@ def zipSensorAndInferenceData(sensorData, inferenceData):
 
   columnsOut = sensorColumns + inferenceColumns[1:]
   valuesOut = []
+  sensorStep = 0
+  inferenceStep = 0
 
-  for i, sensorValue in enumerate(sensorValues):
-    valueOut = sensorValue + inferenceValues[i][1:]
+  # This loop matches HTM inferences with sensor data of the same timestamp.
+  # Progresses through all sensor data and zips inferences into a new output
+  # list.
+  for sensorValue in sensorValues:
+    sensorTime = iso8601.parse_date(sensorValue[sensorColumns.index("time")])
+    inferenceTime = iso8601.parse_date(inferenceValues[inferenceStep][sensorColumns.index("time")])
+    while inferenceTime < sensorTime:
+      inferenceStep += 1
+      inferenceTime = iso8601.parse_date(inferenceValues[inferenceStep][sensorColumns.index("time")])
+    if sensorTime == inferenceTime:
+      valueOut = sensorValue + inferenceValues[inferenceStep][1:]
+    else:
+      valueOut = sensorValue + [None, None]
     valuesOut.append(valueOut)
+    sensorStep += 1
 
   dataOut = {
     "series": [{
@@ -49,6 +65,14 @@ def zipSensorAndInferenceData(sensorData, inferenceData):
 
   return dataOut
 
+
+def influxCopyPossible(fromMeta, toMeta):
+  # Name and tags must be the same.
+  if fromMeta["name"] != toMeta["name"] \
+      or fromMeta["tags"] != toMeta["tags"]:
+    return False
+  # Ensure all columns exist in the destination schema.
+  return all(x in toMeta["columns"] for x in fromMeta["columns"])
 
 
 class SensorClient(object):
@@ -78,7 +102,8 @@ class SensorClient(object):
     )
 
     # TODO: having IO in the constructor is a bad idea, but this is a prototype.
-    if database not in [d["name"] for d in self._client.get_list_database()]:
+    databases = self._client.get_list_database()
+    if database not in [d["name"] for d in databases]:
       print "Creating Influx database '%s'..." % database
       self._client.create_database(database)
 
@@ -158,16 +183,32 @@ class SensorClient(object):
                        measurement,
                        component,
                        limit=None,
-                       since=None):
-    query = "SELECT * FROM " + measurement \
-          + " WHERE component = '" + component + "'"
+                       since=None,
+                       aggregate=None,
+                       database=None):
+    toSelect = "value"
+
+    if aggregate is not None:
+      toSelect = "MEAN(value)"
+
+    query = "SELECT {0} FROM {1} WHERE component = '{2}'".format(toSelect, measurement, component)
+
     if since is not None:
       query += " AND time > {0}s".format(since)
-    query += " GROUP BY * ORDER BY time DESC"
+
+    if aggregate is None:
+      query += " GROUP BY *"
+    else:
+      query += " GROUP BY time({0})".format(aggregate)
+
+    query += " ORDER BY time DESC"
+
     if limit is not None:
       query += " LIMIT {0}".format(limit)
 
-    response = self._client.query(query)
+    print query
+
+    response = self._client.query(query, database=database)
 
     # Don't process empty responses
     if len(response) < 1:
@@ -181,10 +222,48 @@ class SensorClient(object):
     return data
 
 
-  def getSensorData(self, measurement, component, limit=None, since=None):
-    sensorData = self.queryMeasurement(measurement, component, limit, since)
-    inferenceData = self.queryMeasurement(measurement + "_inference", component, limit, since)
+  def getSensorData(self, measurement, component, limit=None, since=None, aggregate=None):
+    sensorData = self.queryMeasurement(measurement, component, limit=limit, since=since, aggregate=aggregate)
+    inferenceData = self.queryMeasurement(measurement + "_inference", component, limit=limit, since=since)
     return zipSensorAndInferenceData(sensorData, inferenceData)
+
+
+  def transfer(self, **kwargs):
+    fromDb = kwargs["from"]
+    toDb = kwargs["to"]
+    component = kwargs["component"]
+    measurement = kwargs["measurement"]
+    limit = kwargs["limit"]
+    rawData = self.queryMeasurement(
+      measurement, component, limit=1, database=toDb
+    )
+    if isinstance(rawData, list):
+      raise Exception("Cannot transfer data because destination DB schema does not match source DB schema!")
+    toSignature = rawData["series"][0]
+    fromData = self.queryMeasurement(
+      measurement, component, limit=limit, database=fromDb
+    )["series"][0]
+
+    if not influxCopyPossible(fromData, toSignature):
+      if kwargs["verbose"]:
+        from pprint import pprint
+        pprint(fromData)
+        pprint(toSignature)
+      raise Exception("Cannot transfer data because destination DB schema does not match source DB schema!")
+
+    payload = []
+
+    for point in fromData["values"]:
+      payload.append({
+        "tags": fromData["tags"],
+        "time": point[0],
+        "measurement": measurement,
+        "fields": {
+          "value": float(point[1])
+        }
+      })
+
+    self._client.write_points(payload)
 
 
 

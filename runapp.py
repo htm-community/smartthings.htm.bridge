@@ -102,7 +102,7 @@ class Index:
 
 
 class Models:
-  
+
   def GET(self):
     hitcClient = getHitcClient()
     if hitcClient is not None:
@@ -113,7 +113,7 @@ class Models:
 
 
 class SensorList:
-  
+
   def GET(self):
     return json.dumps(getSensorIds(sensorClient.listSensors()))
 
@@ -121,12 +121,13 @@ class SensorList:
 class SensorData:
 
   def GET(self, measurement, component):
-    query = web.input(limit=None, since=None)
+    query = web.input(limit=None, since=None, aggregate=None)
     sensor = sensorClient.getSensorData(
       measurement,
       component,
       limit=query.limit,
-      since=query.since
+      since=query.since,
+      aggregate=query.aggregate
     )
     return json.dumps(sensor)
 
