@@ -15,6 +15,7 @@ INFLUX_HOST=localhost
 INFLUX_PORT=8086
 INFLUX_USER=username
 INFLUX_PASS=password
+INFLUX_SSL=1
 ```
 
 Run:
