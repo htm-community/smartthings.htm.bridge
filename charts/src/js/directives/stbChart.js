@@ -37,22 +37,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           scope.getData();
         }
       });
-      /*
-      watchers.globalSince = scope.$on('setSince', function(event, newValue) {
-        if (newValue !== scope.view.since) {
-          scope.view.since = newValue;
-          scope.getData();
-        }
-      });
 
-      watchers.globalAggregate = scope.$on('setAggregate', function(event, newValue){
-        if (newValue.number !== scope.view.aggregateNumber || newValue.unit !== scope.view.aggregateUnit) {
-          scope.view.aggregateNumber = newValue.number;
-          scope.view.aggregateUnit = newValue.unit;
-          scope.getData();
-        }
-      });
-      */
       var getSince = function(since) {
         var now = moment();
         var duration = moment.duration(since.number, since.units);
