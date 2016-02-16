@@ -24,16 +24,20 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
       scope.view.fieldStates = [];
       scope.view.loading = false;
       scope.view.data = null;
+      scope.view.aggregateNumber = null;
+      scope.view.aggregateUnit = null;
+      scope.view.aggregateUnits = CONFIG.AGGREGATE_OPTIONS;
 
-
-
-      watchers.globalLimit = scope.$on('setLimit', function(event, newValue) {
-        if (newValue !== scope.view.limit) {
-          scope.view.limit = newValue;
+      watchers.globalLimits = scope.$on('setLimits', function(event, newValue) {
+        if (newValue.limit !== scope.view.limit || newValue.since !== scope.view.since || newValue.aggregate.number !== scope.view.aggregateNumber || newValue.aggregate.unit !== scope.view.aggregateUnit) {
+          scope.view.limit = newValue.limit;
+          scope.view.since = newValue.since;
+          scope.view.aggregateNumber = newValue.aggregate.number;
+          scope.view.aggregateUnit = newValue.aggregate.unit;
           scope.getData();
         }
       });
-
+      /*
       watchers.globalSince = scope.$on('setSince', function(event, newValue) {
         if (newValue !== scope.view.since) {
           scope.view.since = newValue;
@@ -41,6 +45,14 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         }
       });
 
+      watchers.globalAggregate = scope.$on('setAggregate', function(event, newValue){
+        if (newValue.number !== scope.view.aggregateNumber || newValue.unit !== scope.view.aggregateUnit) {
+          scope.view.aggregateNumber = newValue.number;
+          scope.view.aggregateUnit = newValue.unit;
+          scope.getData();
+        }
+      });
+      */
       var getSince = function(since) {
         var now = moment();
         var duration = moment.duration(since.number, since.units);
@@ -243,6 +255,23 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         scope.view.chart.setVisibility(field.id, field.visible);
       };
 
+      scope.showVisibilityToggle = function() {
+        var show = false;
+        angular.forEach(scope.view.fieldStates, function(field){
+          if (field.name === "anomalyScore" || field.name === "anomalyLikelihood") {
+            show = true;
+          }
+        });
+        return show;
+      };
+
+      scope.checkAggregate = function() {
+        if (!scope.view.aggregateUnit || !scope.view.since) {
+          scope.view.aggregateNumber = null;
+          scope.view.aggregateUnit = null;
+        }
+      };
+
       var preprocessData = function(data) {
         removeStringData(data);
         setDates(data);
@@ -261,6 +290,9 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
         }
         if (scope.view.since !== null) {
           options.params.since = getSince(scope.view.since);
+        }
+        if (scope.view.aggregateNumber !== null && scope.view.aggregateUnit !== null) {
+          options.params.aggregate = scope.view.aggregateNumber.toString() + scope.view.aggregateUnit;
         }
         $http.get(dataUrl, options).then(function(sensorData) {
           // console.log(sensorData);

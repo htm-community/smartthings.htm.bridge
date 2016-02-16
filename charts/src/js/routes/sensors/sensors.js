@@ -44,19 +44,31 @@ angular.module('sensors').controller('SensorsListController', ['$scope', '$http'
     $scope.sensors = response.data;
   });
 
-  $scope.setLimit = function() {
-    $scope.$broadcast("setLimit", $scope.view.limit);
+  $scope.setLimits = function() {
+    $scope.$broadcast("setLimits", {
+      limit : $scope.view.limit,
+      since : $scope.view.since,
+      aggregate : $scope.view.aggregate
+    });
   };
 
-  $scope.setSince = function() {
-    $scope.$broadcast("setSince", $scope.view.since);
+  $scope.checkAggregate = function() {
+    if (!$scope.view.aggregate.unit || !$scope.view.aggregate.number) {
+      $scope.view.aggregate.number = null;
+      $scope.view.aggregate.unit = null;
+    }
   };
 
   $scope.view = {
     sinceOptions : CONFIG.SINCE_OPTIONS,
     limitOptions : CONFIG.LIMIT_OPTIONS,
     limit : CONFIG.LIMIT_OPTIONS[0],
-    since : null
+    since : null,
+    aggregateOptions : CONFIG.AGGREGATE_OPTIONS,
+    aggregate : {
+      number : null,
+      unit : null
+    }
   };
 
 }]);
