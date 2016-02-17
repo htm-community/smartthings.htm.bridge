@@ -163,14 +163,15 @@ class SensorClient(object):
     self._client.write_points(payload)
 
 
-  def saveResult(self, result, point):
+  def saveResult(self, htmResult, point):
     timezone = "unknown"
     if "timezone" in point:
       timezone = point["timezone"]
     self.saveSensorData(point)
-    self.saveHtmInference(
-      result, point["component"], point["stream"], point["time"], timezone
-    )
+    if htmResult:
+      self.saveHtmInference(
+        htmResult, point["component"], point["stream"], point["time"], timezone
+      )
 
 
   def listSensors(self):
