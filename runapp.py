@@ -8,10 +8,13 @@ from hitcpy import HITC
 
 from influxclient import SensorClient
 
-sensorClient = SensorClient("smartthings_htm_bridge", verbose=True)
+
+INFLUX_DATABASE = os.environ["INFLUX_DB"]
 DEFAULT_PORT = 8080
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
+
+sensorClient = SensorClient(INFLUX_DATABASE, verbose=True)
 
 
 #####################
@@ -43,7 +46,7 @@ def runOneDataPoint(hitcClient, modelId, inputTime, value):
 def getHitcClient():
   hitcClient = None
   hitcUrl = getHitcUrl()
-  if hitcUrl is not None:
+  if hitcUrl is not None and len(hitcUrl) > 0:
     hitcClient = HITC(hitcUrl)
   return hitcClient
 

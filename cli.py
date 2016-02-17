@@ -15,6 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # ----------------------------------------------------------------------
 import sys
+import os
 import json
 from optparse import OptionParser
 
@@ -189,8 +190,9 @@ def extractIntent(command):
 
 def runAction(subject, action, **kwargs):
   hitcClient = getHitcClient()
+  database = os.environ["INFLUX_DB"]
   sensorClient = SensorClient(
-    "smartthings_htm_bridge", verbose=kwargs["verbose"]
+    database, verbose=kwargs["verbose"]
   )
   subjectType = get_class(subject)(hitcClient, sensorClient)
   actionFunction = getattr(subjectType, action)
