@@ -11,6 +11,28 @@ angular.module('app', [
 angular.module('app').constant('CONFIG', {
   'STRING_COLUMNS': ['component', 'timezone'],
   'LIMIT_OPTIONS': [100, 500, 1000, 5000, 10000, 50000],
+  'AGGREGATE_OPTIONS' : [
+    {
+      label : 'seconds',
+      value : 's'
+    },
+    {
+      label : 'minutes',
+      value : 'm'
+    },
+    {
+      label : 'hours',
+      value : 'h'
+    },
+    {
+      label : 'days',
+      value : 'd'
+    },
+    {
+      label : 'weeks',
+      value : 'w'
+    }
+  ],
   'SINCE_OPTIONS': [{
     number: 10,
     units: 'minutes'

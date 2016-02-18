@@ -1,7 +1,7 @@
 <div class="panel panel-warning sensors-panel">
     <div class="panel-heading clearfix">
       <div class="row dropdowns">
-        <div class="col-md-4">
+        <div class="col-md-2">
           <div class="btn-group">
             <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
               Jump to a chart <span class="caret"></span>
@@ -11,19 +11,29 @@
             </ul>
           </div>
         </div>
-        <div class="col-md-8 form-inline limits">
+        <div class="col-md-10 form-inline limits">
           <span class="set-limits">Set limits for all charts:</span>
           <div class="btn-group">
-            <label for="limitOptions">Row limit</label>
-            <select class="form-control" name="limitOptions" ng-options="limit for limit in view.limitOptions" ng-model="view.limit" ng-change="setLimit()">
+            <label for="limitOptions">Row limit:</label>
+            <select class="form-control" name="limitOptions" ng-options="limit for limit in view.limitOptions" ng-model="view.limit">
               <option value="">None</option>
             </select>
           </div>
           <div class="btn-group">
-            <label for="limitOptions">Time limit</label>
-            <select class="form-control" name="sinceOptions" ng-options="(value.number + ' ' + value.units) for (name, value) in view.sinceOptions" ng-model="view.since" ng-change="setSince()">
+            <label for="limitOptions">Time limit:</label>
+            <select class="form-control" ng-change="checkAggregate()" name="sinceOptions" ng-options="(value.number + ' ' + value.units) for (name, value) in view.sinceOptions" ng-model="view.since">
               <option value="">None</option>
             </select>
+          </div>
+          <div class="btn-group">
+            <label for="limitOptions">Aggregate:</label>
+            <input class="form-control aggregate-number" ng-disabled="!view.since" ng-model="view.aggregate.number">
+            <select class="form-control" ng-change="checkAggregate()" ng-disabled="!view.since" ng-options="unit.value as unit.label for unit in view.aggregateOptions" ng-model="view.aggregate.unit">
+              <option value="">None</option>
+            </select>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" ng-click="setLimits()">Set Limits</button>
           </div>
         </div>
       </div>

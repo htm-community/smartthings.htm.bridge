@@ -1,28 +1,34 @@
 <div class="chart">
-  <div class="chart-controls form-horizontal">
+  <div class="chart-controls form-horizontal form-inline">
     <div class="form-group">
-      <div class="col-md-3">
-        <label class="col-md-6 control-label">Row Limit:</label>
-        <div class="col-md-6">
-          <select class="form-control" ng-options="limit for limit in view.limitOptions" ng-model="view.limit" ng-change="getData()">
-            <option value="">None</option>
-          </select>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <label class="col-md-6 control-label">Time limit:</label>
-        <div class="col-md-6">
-          <select class="form-control" ng-options="(value.number + ' ' + value.units) for (name, value) in view.sinceOptions" ng-model="view.since" ng-change="getData()">
-            <option value="">None</option>
-          </select>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <label class="col-md-3 control-label">Visibility:</label>
-        <div class="col-md-9">
+      <div class="col-md-12">
+        <div class="btn-group" ng-show="showVisibilityToggle()">
+          <label class="control-label">Visibility:</label>
           <ul class="set-visiblity">
             <li ng-repeat="field in view.fieldStates track by field.id" ng-if="field.name === 'anomalyScore' || field.name === 'anomalyLikelihood'"><input type="checkbox" ng-model="field.visible" ng-click="toggleVisibility(field)"> <label style="color: {{field.color}}">{{field.name}}</label></li>
           </ul>
+        </div>
+        <div class="btn-group">
+          <label class="control-label">Row Limit:</label>
+          <select class="form-control" ng-options="limit for limit in view.limitOptions" ng-model="view.limit">
+            <option value="">None</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <label class="control-label">Time limit:</label>
+            <select class="form-control" ng-change="checkAggregate()" ng-options="(value.number + ' ' + value.units) for (name, value) in view.sinceOptions" ng-model="view.since">
+              <option value="">None</option>
+            </select>
+        </div>
+        <div class="btn-group">
+          <label class="control-label">Aggregate:</label>
+          <input class="form-control aggregate-number" ng-disabled="!view.since" ng-model="view.aggregateNumber">
+          <select class="form-control" ng-change="checkAggregate()" ng-disabled="!view.since" ng-options="unit.value as unit.label for unit in view.aggregateUnits" ng-model="view.aggregateUnit">
+            <option value="">None</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" ng-click="getData()">Update</button>
         </div>
       </div>
     </div>
