@@ -57,6 +57,15 @@ angular.module('app').constant('CONFIG', {
   }, {
     number: 1,
     units: 'week'
+  }, {
+    number: 2,
+    units: 'weeks'
+  }, {
+    number: 1,
+    units: 'month'
+  }, {
+    number: 3,
+    units: 'months'
   }],
   'CHART_FIELDS': {
     'anomalyScore': {
