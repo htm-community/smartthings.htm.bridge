@@ -195,7 +195,8 @@ class SensorClient(object):
     if aggregate is not None:
       toSelect = "MEAN(value)"
 
-    query = "SELECT {0} FROM {1} WHERE component = '{2}'".format(toSelect, measurement, component)
+    query = "SELECT {0} FROM {1} WHERE component = '{2}'"\
+      .format(toSelect, measurement, component)
 
     if since is not None:
       query += " AND time > {0}s".format(since)
@@ -203,7 +204,7 @@ class SensorClient(object):
     if aggregate is None:
       query += " GROUP BY *"
     else:
-      query += " GROUP BY time({0})".format(aggregate)
+      query += " GROUP BY time({0}) fill(previous)".format(aggregate)
 
     query += " ORDER BY time DESC"
 
