@@ -139,14 +139,15 @@ class SensorData:
 # Start here #
 ##############
 
-if __name__ == "__main__":
+def start():
   port = DEFAULT_PORT
   if "PORT" in os.environ:
     port = int(os.environ["PORT"])
-  debug = False
-  if "DEBUG" in os.environ:
-    debug = True
 
   print "RUNNING WEBPY APP on port %s" % port
   app = web.application(urls, globals())
   app.run()
+
+
+if __name__ == "__main__":
+  start()

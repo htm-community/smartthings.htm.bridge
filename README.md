@@ -4,9 +4,9 @@
 
 A bridge for smartthings apps to post data to, which will in turn run data through HTM REST API.
 
-## To Run
+## To Install
 
-    pip install -r requirements.txt
+    python setup.py install [--user]
 
 You must have the following env vars:
 
@@ -19,10 +19,9 @@ INFLUX_DB=database_name
 INFLUX_SSL=1
 ```
 
-Run:
+## To Run Data Server
 
-    python runapp.py
-    
+    cd st_htm_bridge/server && python server.py
 
 ## Command Line Interface
 

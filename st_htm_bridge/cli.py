@@ -21,8 +21,7 @@ from optparse import OptionParser
 
 import iso8601
 
-from runapp import getHitcClient, runOneDataPoint
-from influxclient import SensorClient
+from data import getHitcClient, runOneDataPoint, SensorClient
 
 
 get_class = lambda x: globals()[x]
@@ -150,10 +149,11 @@ class sensors:
 
 
   def data(self, **kwargs):
-    data = self._sensorClient.queryMeasurement(
-      kwargs["measurement"], kwargs["component"],
-      limit=kwargs["limit"]
-    )["series"][0]
+    rawData = self._sensorClient.queryMeasurement(
+      kwargs["measurement"], kwargs["component"], limit=kwargs["limit"]
+    )
+    
+    data = rawData["series"][0]
     values = data["values"]
     columns = data["columns"]
     print columns
@@ -200,8 +200,7 @@ def runAction(subject, action, **kwargs):
   actionFunction(**kwargs)
 
 
-
-if __name__ == "__main__":
+def main():
   parser = createOptionsParser()
   options, args = parser.parse_args(sys.argv[1:])
   if len(args) < 1:

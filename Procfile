@@ -1,1 +1,1 @@
-web: python runapp.py ${PORT}
+web: cd st_htm_bridge/data && python server.py ${PORT}
