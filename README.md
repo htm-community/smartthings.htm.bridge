@@ -21,7 +21,9 @@ INFLUX_SSL=1
 
 ## To Run Data Server
 
-    cd st_htm_bridge/server && python server.py
+    cd st_htm_bridge/data && python server.py
+    
+The open <http://localhost:8080/> in your browser.
 
 ## Command Line Interface
 
@@ -31,26 +33,26 @@ You can use this to interact with HITC. I use it to manage models and view senso
 
 #### Create a model
 
-    ./cli.py models:create \
+    st_htm_bridge_cli models:create \
         --guid=<guid> \
         --paramPath=<path-to-params-json>
 
 #### List models
 
-    ./cli.py models:list
+    st_htm_bridge_cli models:list
 
 #### Delete a model
 
-    ./cli.py models:delete \
+    st_htm_bridge_cli models:delete \
         --guid=<guid>
 
 #### Delete all models
 
-    ./cli.py models:deleteAll
+    st_htm_bridge_cli models:deleteAll
 
 #### Run data through a model
 
-    ./cli.py models:loadData \
+    st_htm_bridge_cli models:loadData \
         --component=<component> \
         --measurement=<measurement> \
         --limit=<limit> \
@@ -60,26 +62,26 @@ You can use this to interact with HITC. I use it to manage models and view senso
 
 #### List available sensors
 
-    ./cli.py sensors:list
+    st_htm_bridge_cli sensors:list
 
 
 #### List data available for a sensor
 
-    ./cli.py sensors:data \
+    st_htm_bridge_cli sensors:data \
         --component=<component> \
         --measurement=<measurement> \
         --limit=<limit>
 
 #### List HTM inferences available for a sensor
 
-    ./cli.py sensors:inference \
+    st_htm_bridge_cli sensors:inference \
         --component=<component> \
         --measurement=<measurement> \
         --limit=<limit>
 
 #### Transfer sensor data from one DB to another
 
-    ./cli.py sensors:transfer \
+    st_htm_bridge_cli sensors:transfer \
         --from=<fromDB> \
         --to=<toDb> \
         --measurement=<measurement> \

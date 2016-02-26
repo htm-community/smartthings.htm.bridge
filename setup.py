@@ -7,14 +7,11 @@ with open("requirements.txt", "r") as reqfile:
   for line in reqfile:
     installRequires.append(line.strip())
 
-packages = find_packages()
-print packages
-
 setup(
   name = "smartthings_htm_bridge",
   description = "SmartThings HTM Bridge saves IOT sensor data into InfluxDB "
                 "and makes it easier to process with HTM.",
-  packages = packages,
+  packages = find_packages(),
   include_package_data=True,
   install_requires = installRequires,
   entry_points = {

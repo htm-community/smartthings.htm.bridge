@@ -1,13 +1,10 @@
 import os
 import json
-import time
-from datetime import datetime
 
 import web
-from hitcpy import HITC
 
 from influxclient import SensorClient
-
+from utils import getHitcClient, runOneDataPoint
 
 INFLUX_DATABASE = os.environ["INFLUX_DB"]
 DEFAULT_PORT = 8080
@@ -15,49 +12,6 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 # 2015-12-08 23:12:47.105
 
 sensorClient = SensorClient(INFLUX_DATABASE, verbose=True)
-
-
-#####################
-# Utility functions #
-#####################
-
-def getHitcUrl():
-  if "HITC" not in os.environ:
-    return None
-  url = os.environ["HITC"]
-  if url.endswith("/"):
-    url = url[:-1]
-  return url
-
-
-def runOneDataPoint(hitcClient, modelId, inputTime, value):
-  if isinstance(inputTime, basestring):
-    timestamp = int(time.mktime(datetime.strptime(inputTime, DATE_FORMAT).timetuple()))
-  else:
-    timestamp = int(time.mktime(inputTime.timetuple()))
-  dataRow = {
-    "c0": timestamp,
-    "c1": value
-  }
-  # There is only one value in the result list, so pop() it off.
-  return hitcClient.get_model(modelId).run(dataRow).pop()
-
-
-def getHitcClient():
-  hitcClient = None
-  hitcUrl = getHitcUrl()
-  if hitcUrl is not None and len(hitcUrl) > 0:
-    hitcClient = HITC(hitcUrl)
-  return hitcClient
-
-
-def getSensorIds(sensors):
-  sensorIds = []
-  for sensor in sensors:
-    name = sensor["name"]
-    for tag in sensor["tags"]:
-      sensorIds.append(name + "/" + tag["component"])
-  return sorted(list(set(sensorIds)))
 
 
 #################
@@ -70,6 +24,16 @@ urls = (
   '/_data/sensors/?', 'SensorList',
   '/_data/sensor/(.+)/(.+)/?', 'SensorData'
 )
+
+
+def getSensorIds(sensors):
+  sensorIds = []
+  for sensor in sensors:
+    name = sensor["name"]
+    for tag in sensor["tags"]:
+      sensorIds.append(name + "/" + tag["component"])
+  return sorted(list(set(sensorIds)))
+
 
 class Index:
 

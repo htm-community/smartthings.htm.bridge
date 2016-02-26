@@ -149,28 +149,35 @@ class sensors:
 
 
   def data(self, **kwargs):
+    validateKwargs(["measurement", "component"], kwargs)
     rawData = self._sensorClient.queryMeasurement(
       kwargs["measurement"], kwargs["component"], limit=kwargs["limit"]
     )
-    
-    data = rawData["series"][0]
-    values = data["values"]
-    columns = data["columns"]
-    print columns
-    for v in values:
-      print(v)
+    if len(rawData) == 0:
+      print "No data."
+    else:
+      data = rawData["series"][0]
+      values = data["values"]
+      columns = data["columns"]
+      print columns
+      for v in values:
+        print(v)
 
 
   def inference(self, **kwargs):
-    data = self._sensorClient.queryMeasurement(
+    validateKwargs(["measurement", "component"], kwargs)
+    rawData = self._sensorClient.queryMeasurement(
       kwargs["measurement"] + "_inference", kwargs["component"],
-      limit=kwargs["limit"]
-    )["series"][0]
-    values = data["values"]
-    columns = data["columns"]
-    print columns
-    for v in values:
-      print(v)
+      limit=kwargs["limit"])
+    if len(rawData) == 0:
+      print "No data."
+    else:
+      data = rawData["series"][0]
+      values = data["values"]
+      columns = data["columns"]
+      print columns
+      for v in values:
+        print(v)
 
 
   def list(self, **kwargs):
@@ -181,11 +188,24 @@ class sensors:
 
 
   def transfer(self, **kwargs):
+    validateKwargs([
+      "from", "to", "component", "measurement"
+    ], kwargs)
     self._sensorClient.transfer(**kwargs)
 
 
 def extractIntent(command):
   return command.split(":")
+
+
+def validateKwargs(requiredKeys, kwargs):
+  for key in requiredKeys:
+    if kwargs[key] is None:
+      requiredOptions = " and "\
+        .join(["--{}".format(key) for key in requiredKeys])
+      print "You must provide {} for this call.".format(requiredOptions)
+      exit(-1)
+
 
 
 def runAction(subject, action, **kwargs):
@@ -196,7 +216,7 @@ def runAction(subject, action, **kwargs):
   )
   subjectType = get_class(subject)(hitcClient, sensorClient)
   actionFunction = getattr(subjectType, action)
-  print "\n* * *\n"
+  # print "\n* * *\n"
   actionFunction(**kwargs)
 
 

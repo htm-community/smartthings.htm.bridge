@@ -1,2 +1,2 @@
-from server import getHitcClient, runOneDataPoint
+from utils import getHitcClient, runOneDataPoint
 from influxclient import SensorClient
