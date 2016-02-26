@@ -86,8 +86,10 @@ class SensorClient(object):
                ssl=DEFAULT_SSL,
                verbose=False
                ):
+
     self._database = database
     self._verbose = verbose
+
     if self._verbose:
       print("Connecting to {0}:{1}@{2}:{3} (SSL? {4})".format(
         username, "***********", host, port, ssl
@@ -104,7 +106,8 @@ class SensorClient(object):
     # TODO: having IO in the constructor is a bad idea, but this is a prototype.
     databases = self._client.get_list_database()
     if database not in [d["name"] for d in databases]:
-      print "Creating Influx database '%s'..." % database
+      if self._verbose:
+        print "Creating Influx database '%s'..." % database
       self._client.create_database(database)
 
     if self._verbose:
