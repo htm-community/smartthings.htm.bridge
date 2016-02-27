@@ -65,7 +65,7 @@ class SensorData:
     if since is not None:
       # InfluxDB expects a 19-digit timestamp.
       since = int(query.since) * 1000000000
-    sensor = sensorClient.getSensorData(
+    sensor = sensorClient.getCombinedSensorData(
       measurement,
       component,
       limit=query.limit,

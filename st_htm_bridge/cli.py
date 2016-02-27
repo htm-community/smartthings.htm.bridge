@@ -127,19 +127,29 @@ class models:
       if model.guid == guid:
         model.delete()
         print "Deleted model '%s'" % guid
+    if kwargs["measurement"] is not None and kwargs["component"] is not None:
+      # Safeguard to ensure original sensor data is not accidentally deleted.
+      measurement = kwargs["measurement"]
+      if not measurement.endswith("_inference"):
+        measurement = "{}_inference".format(measurement)
+      sensors(
+        self._hitcClient, self._sensorClient, self._verbose
+      ).delete(measurement=measurement, component=kwargs["component"])
 
 
   def deleteAll(self, **kwargs):
     for model in self._hitcClient.get_all_models():
-      model.delete()
-      print "Deleted model '%s'" % model.guid
+      kwargs["guid"] = model.guid
+      self.delete(**kwargs)
 
 
   def load(self, **kwargs):
     validateKwargs(["measurement", "component", "guid"], kwargs)
     guid = kwargs["guid"]
+    measurement = kwargs["measurement"]
+    component = kwargs["component"]
     data = self._sensorClient.getSensorData(
-      kwargs["measurement"], kwargs["component"],
+      measurement, component,
       limit=kwargs["limit"], aggregation=kwargs["aggregation"]
     )["series"][0]
     dataValues = data["values"]
@@ -147,9 +157,15 @@ class models:
       print "Pulled {} data points from InfluxDB...".format(len(dataValues))
     results = []
     for point in dataValues:
-      results.append(self._runOneDataPoint(
-        self._hitcClient, guid, iso8601.parse_date(point[0]), point[1]
-      ))
+      pointTime = point[0]
+      htmResults = self._runOneDataPoint(
+        self._hitcClient, guid, iso8601.parse_date(pointTime), point[1]
+      )
+      results.append({
+        "results": htmResults,
+        "time": pointTime
+      })
+    self._sensorClient.saveHtmResults(measurement, component, results)
     print "Loaded %i data points into model '%s'." % (len(results), guid)
 
 
@@ -222,6 +238,15 @@ class sensors:
       name = s["name"]
       if not name.endswith("_inference"):
         print "component: %s\tmeasurement: %s" % (s["tags"][0]["component"], name)
+
+
+  def delete(self, **kwargs):
+    validateKwargs(["measurement", "component"], kwargs)
+    if self._verbose:
+      print "Deleting data for {}:{}".format(
+        kwargs["measurement"], kwargs["component"]
+      )
+    self._sensorClient.delete(kwargs["measurement"], kwargs["component"])
 
 
   def transfer(self, **kwargs):

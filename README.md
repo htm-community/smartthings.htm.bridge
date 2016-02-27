@@ -102,3 +102,11 @@ The commands below query raw InfluxDB sensor data from SmartThings.
         --measurement=<measurement> \
         --component=<component> \
         --limit=<limit> [optional]
+
+#### Delete sensor data
+
+Deletes all data points for specified measurement / component.
+
+    st_htm_bridge_cli sensors:delete \
+        --measurement=<measurement> \
+        --component=<component>

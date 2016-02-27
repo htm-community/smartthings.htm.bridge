@@ -67,44 +67,61 @@ class SensorClient(object):
     self._client.switch_database(database)
 
 
-  # def saveHtmInference(self,
-  #                      result,
-  #                      component,
-  #                      measurement,
-  #                      timestamp,
-  #                      timezone
-  #                      ):
-  #   print "Saving HTM inference..."
-  #   anomalyScore = result["inferences"]["anomalyScore"]
-  #   anomalyLikelihood = result["anomalyLikelihood"]
-  #
-  #   payload = [{
-  #     "tags": {
-  #       "component": component,
-  #       "timezone": timezone,
-  #     },
-  #     "time": timestamp,
-  #     "measurement": measurement + '_inference',
-  #     "fields": {
-  #       "anomalyScore": anomalyScore,
-  #       "anomalyLikelihood": anomalyLikelihood
-  #     }
-  #   }]
-  #
-  #   self._client.write_points(payload)
+  def saveHtmInference(self,
+                       result,
+                       component,
+                       measurement,
+                       timestamp,
+                       ):
+    print "Saving HTM inference..."
+    anomalyScore = result["inferences"]["anomalyScore"]
+    anomalyLikelihood = result["anomalyLikelihood"]
+
+    payload = [{
+      "tags": {
+        "component": component,
+      },
+      "time": timestamp,
+      "measurement": measurement + '_inference',
+      "fields": {
+        "anomalyScore": anomalyScore,
+        "anomalyLikelihood": anomalyLikelihood
+      }
+    }]
+
+    self._client.write_points(payload)
+
+
+  def saveHtmResults(self, measurement, component, results):
+    if self._verbose:
+      print "Saving HTM results..."
+    payload = []
+    for result in results:
+      anomalyScore = result["results"]["inferences"]["anomalyScore"]
+      anomalyLikelihood = result["results"]["anomalyLikelihood"]
+
+      payload.append({
+        "tags": {
+          "component": component,
+        },
+        "time": result["time"],
+        "measurement": measurement + '_inference',
+        "fields": {
+          "anomalyScore": anomalyScore,
+          "anomalyLikelihood": anomalyLikelihood
+        }
+      })
+    if self._verbose:
+      print "Writing {} points...".format(len(payload))
+    self._client.write_points(payload)
 
 
   def saveSensorData(self, point):
     print "Saving sensor data point..."
 
-    timezone = "unknown"
-    if "timezone" in point:
-      timezone = point["timezone"]
-
     payload = [{
       "tags": {
         "component": point["component"],
-        "timezone": timezone,
       },
       "time": point["time"],
       "measurement": point["stream"],
@@ -131,40 +148,42 @@ class SensorClient(object):
 
     sensorValues = sensorSeries["values"]
     sensorColumns = sensorSeries["columns"]
+    sensorTimeIndex = sensorColumns.index("time")
     inferenceValues = inferenceSeries["values"]
     inferenceColumns = inferenceSeries["columns"]
+    inferenceTimeIndex = inferenceColumns.index("time")
 
     columnsOut = sensorColumns + inferenceColumns[1:]
     valuesOut = []
-    sensorStep = 0
-    inferenceStep = 0
+    prevSensor = None
+    prevAnomScore = None
+    prevAnomLikely = None
 
-    # This loop matches HTM inferences with sensor data of the same timestamp.
-    # Progresses through all sensor data and zips inferences into a new output
-    # list.
-    for sensorValue in sensorValues:
-      sensorTime = iso8601.parse_date(sensorValue[sensorColumns.index("time")])
-      inferenceTime = iso8601.parse_date(
-        inferenceValues[inferenceStep][sensorColumns.index("time")]
-      )
-      while inferenceTime < sensorTime:
-        inferenceStep += 1
-        inferenceTime = iso8601.parse_date(
-          inferenceValues[inferenceStep][sensorColumns.index("time")]
-        )
+    while len(sensorValues) > 0 and len(inferenceValues) > 0:
+      sensorTime = sensorValues[0][sensorTimeIndex]
+      inferenceTime = inferenceValues[0][inferenceTimeIndex]
       if sensorTime == inferenceTime:
-        valueOut = sensorValue + inferenceValues[inferenceStep][1:]
+        sensorValue = sensorValues.pop(0)
+        inferenceValue = inferenceValues.pop(0)
+        valuesOut.append(sensorValue + inferenceValue[1:])
+        prevSensor = sensorValue[1]
+        prevAnomScore = inferenceValue[1]
+        prevAnomLikely = inferenceValue[2]
+      elif sensorTime < inferenceTime:
+        sensorValue = sensorValues.pop(0)
+        valuesOut.append(sensorValue + [prevAnomScore, prevAnomLikely])
+        prevSensor = sensorValue[1]
       else:
-        valueOut = sensorValue + [None, None]
-      valuesOut.append(valueOut)
-      sensorStep += 1
+        inferenceValue = inferenceValues.pop(0)
+        valuesOut.append([inferenceValue[0], prevSensor] + inferenceValue[1:])
+        prevAnomScore = inferenceValue[1]
+        prevAnomLikely = inferenceValue[2]
 
     dataOut = {
       "series": [{
         "values": valuesOut,
         "name": sensorSeries["name"],
         "columns": columnsOut,
-        "tags": sensorSeries["tags"]
       }]
     }
 
@@ -191,11 +210,12 @@ class SensorClient(object):
   def queryMeasurement(self,
                        measurement,
                        component,
+                       selection="value",
                        limit=None,
                        since=None,
                        aggregation=None,
                        database=None):
-    toSelect = "value"
+    toSelect = selection
 
     if aggregation is not None:
       toSelect = "MEAN(value)"
@@ -237,6 +257,14 @@ class SensorClient(object):
     return data
 
 
+  def getInferenceData(self, measurement, component, **kwargs):
+    return self.queryMeasurement(
+      measurement + "_inference", component,
+      selection="anomalyLikelihood, anomalyScore",
+      **kwargs
+    )
+
+
   def getSensorData(self,
                     measurement,
                     component,
@@ -245,11 +273,26 @@ class SensorClient(object):
                     aggregation=None):
     if since is None:
       since = self.getEarliestTimestamp(measurement, component)
-    sensorData = self.queryMeasurement(
+    return self.queryMeasurement(
       measurement, component, limit=limit, since=since, aggregation=aggregation
     )
-    inferenceData = self.queryMeasurement(
-      measurement + "_inference", component, limit=limit, since=since
+
+
+
+  def getCombinedSensorData(self,
+                    measurement,
+                    component,
+                    limit=None,
+                    since=None,
+                    aggregation=None):
+    if since is None:
+      since = self.getEarliestTimestamp(measurement, component)
+    sensorData = self.getSensorData(
+      measurement, component, limit=limit, since=since, aggregation=aggregation
+    )
+    inferenceData = self.getInferenceData(
+      measurement, component,
+      limit=limit, since=since
     )
     return self.zipSensorAndInferenceData(sensorData, inferenceData)
 
@@ -292,3 +335,7 @@ class SensorClient(object):
       })
 
     self._client.write_points(payload)
+
+
+  def delete(self, measurement, component):
+    self._client.delete_series(measurement=measurement, tags={"component": component})
