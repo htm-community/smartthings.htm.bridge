@@ -4,12 +4,9 @@ import json
 import web
 
 from influxclient import SensorClient
-from utils import getHitcClient, runOneDataPoint
 
 INFLUX_DATABASE = os.environ["INFLUX_DB"]
 DEFAULT_PORT = 8080
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
-# 2015-12-08 23:12:47.105
 
 sensorClient = SensorClient(INFLUX_DATABASE, verbose=True)
 
@@ -49,34 +46,9 @@ class Index:
     Handles GET calls to "/", which displays HTML.
     Handles POST data calls to "/", which saves off sensor data.
     """
-    hitcClient = getHitcClient()
     data = json.loads(web.data())
-    if hitcClient is not None:
-      modelIds = [m.guid for m in hitcClient.get_all_models()]
-      modelId = data["component"] + '_' +  data["stream"]
-      if modelId not in modelIds:
-        with open("anomaly_params.json") as inputParams:
-          modelSpec = json.loads(inputParams.read())
-          modelSpec["guid"] = modelId
-          hitcClient.create_model(modelSpec)
-      htmResult = runOneDataPoint(
-        hitcClient, modelId, data["time"], data["value"]
-      )
-      sensorClient.saveResult(htmResult, data)
-    else:
-      sensorClient.saveResult(None, data)
+    sensorClient.saveSensorData(data)
     return json.dumps({"result": "success"})
-
-
-class Models:
-
-  def GET(self):
-    hitcClient = getHitcClient()
-    if hitcClient is not None:
-      modelIds = [m.guid for m in hitcClient.get_all_models()]
-    else:
-      modelIds = []
-    return json.dumps(modelIds)
 
 
 class SensorList:

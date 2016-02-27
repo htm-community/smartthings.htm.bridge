@@ -2,7 +2,14 @@
 
 > ## Work in Progress
 
-A bridge for smartthings apps to post data to, which will in turn run data through HTM REST API.
+The goal of this project is to create a platform for storing SmartThings sensor data into a time-series database, allowing experimentation with HTM models.
+
+There are currently two components to this application:
+
+1. Web Server: Accepts POST data from [HTTP Poster SmartApp](https://github.com/rhyolight/smartthings-apps/blob/master/http-poster.groovy) and saves raw data into InfluxDB. Displays saved data in graphs that users can aggregate and navigate.
+1. Command Line Interface: Allows users to experiment with the stored raw IoT data with HTM via [HITC](https://github.com/nupic-community/hitc).
+
+The web server currently works. The CLI is still under construction. 
 
 ## To Install
 
@@ -19,7 +26,7 @@ INFLUX_DB=database_name
 INFLUX_SSL=1
 ```
 
-## To Run Data Server
+## To Run Web Server
 
     cd st_htm_bridge/data && python server.py
     
@@ -27,9 +34,11 @@ The open <http://localhost:8080/> in your browser.
 
 ## Command Line Interface
 
-You can use this to interact with HITC. I use it to manage models and view sensor data. Here's what it can do.
+You can use this to interact with InfluxDB and [HITC](https://github.com/nupic-community/hitc). I use it to manage models and view sensor data. Here's what it can do.
 
 ### Models
+
+The commands below deal with HTM models used to analyze the SmartThings sensor data.
 
 #### Create a model
 
@@ -50,20 +59,19 @@ You can use this to interact with HITC. I use it to manage models and view senso
 
     st_htm_bridge_cli models:deleteAll
 
-#### Run data through a model
+#### Feed a model data
 
-    st_htm_bridge_cli models:loadData \
-        --component=<component> \
-        --measurement=<measurement> \
-        --limit=<limit> \
-        --guid=<guid>
+> COMING SOON
+
+Functionality here should be able to choose aggregation options for InfluxDB and feed data directly into a newly created HTM model or an existing model.
 
 ## Sensor Data
+
+The commands below query raw InfluxDB sensor data from SmartThings.
 
 #### List available sensors
 
     st_htm_bridge_cli sensors:list
-
 
 #### List data available for a sensor
 

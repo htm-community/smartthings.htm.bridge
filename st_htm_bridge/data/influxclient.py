@@ -115,33 +115,31 @@ class SensorClient(object):
     self._client.switch_database(database)
 
 
-
-
-  def saveHtmInference(self,
-                       result,
-                       component,
-                       measurement,
-                       timestamp,
-                       timezone
-                       ):
-    print "Saving HTM inference..."
-    anomalyScore = result["inferences"]["anomalyScore"]
-    anomalyLikelihood = result["anomalyLikelihood"]
-
-    payload = [{
-      "tags": {
-        "component": component,
-        "timezone": timezone,
-      },
-      "time": timestamp,
-      "measurement": measurement + '_inference',
-      "fields": {
-        "anomalyScore": anomalyScore,
-        "anomalyLikelihood": anomalyLikelihood
-      }
-    }]
-
-    self._client.write_points(payload)
+  # def saveHtmInference(self,
+  #                      result,
+  #                      component,
+  #                      measurement,
+  #                      timestamp,
+  #                      timezone
+  #                      ):
+  #   print "Saving HTM inference..."
+  #   anomalyScore = result["inferences"]["anomalyScore"]
+  #   anomalyLikelihood = result["anomalyLikelihood"]
+  #
+  #   payload = [{
+  #     "tags": {
+  #       "component": component,
+  #       "timezone": timezone,
+  #     },
+  #     "time": timestamp,
+  #     "measurement": measurement + '_inference',
+  #     "fields": {
+  #       "anomalyScore": anomalyScore,
+  #       "anomalyLikelihood": anomalyLikelihood
+  #     }
+  #   }]
+  #
+  #   self._client.write_points(payload)
 
 
   def saveSensorData(self, point):
@@ -166,15 +164,15 @@ class SensorClient(object):
     self._client.write_points(payload)
 
 
-  def saveResult(self, htmResult, point):
-    timezone = "unknown"
-    if "timezone" in point:
-      timezone = point["timezone"]
-    self.saveSensorData(point)
-    if htmResult:
-      self.saveHtmInference(
-        htmResult, point["component"], point["stream"], point["time"], timezone
-      )
+  # def saveResult(self, htmResult, point):
+  #   timezone = "unknown"
+  #   if "timezone" in point:
+  #     timezone = point["timezone"]
+  #   self.saveSensorData(point)
+  #   if htmResult:
+  #     self.saveHtmInference(
+  #       htmResult, point["component"], point["stream"], point["time"], timezone
+  #     )
 
 
   def listSensors(self):

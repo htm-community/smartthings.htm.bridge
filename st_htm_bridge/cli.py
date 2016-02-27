@@ -19,9 +19,8 @@ import os
 import json
 from optparse import OptionParser
 
-import iso8601
-
-from data import getHitcClient, runOneDataPoint, SensorClient
+from hitcpy import HITC
+from data import SensorClient
 
 
 get_class = lambda x: globals()[x]
@@ -124,21 +123,6 @@ class models:
       print "Deleted model '%s'" % model.guid
 
 
-  def loadData(self, **kwargs):
-    data = self._sensorClient.getSensorData(
-      kwargs["measurement"], kwargs["component"],
-      limit=kwargs["limit"], sensorOnly=True
-    )["series"][0]
-    guid = kwargs["guid"]
-    results = []
-    for point in data["values"]:
-      results.append(runOneDataPoint(
-        self._hitcClient, guid, iso8601.parse_date(point[0]), point[1]
-      ))
-    print "Loaded %i data points into model '%s'." % (len(results), guid)
-
-
-
 
 class sensors:
 
@@ -194,6 +178,8 @@ class sensors:
     self._sensorClient.transfer(**kwargs)
 
 
+# Util functions
+
 def extractIntent(command):
   return command.split(":")
 
@@ -206,6 +192,22 @@ def validateKwargs(requiredKeys, kwargs):
       print "You must provide {} for this call.".format(requiredOptions)
       exit(-1)
 
+
+def getHitcUrl():
+  if "HITC" not in os.environ:
+    return None
+  url = os.environ["HITC"]
+  if url.endswith("/"):
+    url = url[:-1]
+  return url
+
+
+def getHitcClient():
+  hitcClient = None
+  hitcUrl = getHitcUrl()
+  if hitcUrl is not None and len(hitcUrl) > 0:
+    hitcClient = HITC(hitcUrl)
+  return hitcClient
 
 
 def runAction(subject, action, **kwargs):
