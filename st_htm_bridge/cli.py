@@ -17,11 +17,16 @@
 import sys
 import os
 import json
+import time
+from datetime import datetime
 from optparse import OptionParser
 
+import iso8601
 from hitcpy import HITC
+
 from data import SensorClient
 
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 get_class = lambda x: globals()[x]
 
@@ -72,6 +77,11 @@ def createOptionsParser():
     "--to",
     dest="to",
     help="InfluxDB database name.")
+  parser.add_option(
+    "-a",
+    "--aggregation",
+    dest="aggregation",
+    help="Time period for aggregation (1s, 1m, 1d, 1w, etc.)")
 
   return parser
 
@@ -80,9 +90,10 @@ def createOptionsParser():
 class models:
 
 
-  def __init__(self, hitcClient, sensorClient):
+  def __init__(self, hitcClient, sensorClient, verbose=False):
     self._hitcClient = hitcClient
     self._sensorClient = sensorClient
+    self._verbose = verbose
 
 
   def list(self, **kwargs):
@@ -96,8 +107,7 @@ class models:
 
 
   def create(self, **kwargs):
-    if kwargs["paramPath"] is None:
-      raise ValueError("User must provide --param-path to model params JSON file.")
+    validateKwargs(["paramPath"], kwargs)
     paramPath = kwargs["paramPath"]
     with(open(paramPath, "r")) as paramFile:
       params = json.loads(paramFile.read())
@@ -111,11 +121,13 @@ class models:
 
 
   def delete(self, **kwargs):
+    validateKwargs(["guid"], kwargs)
     guid = kwargs["guid"]
     for model in self._hitcClient.get_all_models():
       if model.guid == guid:
         model.delete()
         print "Deleted model '%s'" % guid
+
 
   def deleteAll(self, **kwargs):
     for model in self._hitcClient.get_all_models():
@@ -123,13 +135,54 @@ class models:
       print "Deleted model '%s'" % model.guid
 
 
+  def load(self, **kwargs):
+    validateKwargs(["measurement", "component", "guid"], kwargs)
+    guid = kwargs["guid"]
+    data = self._sensorClient.getSensorData(
+      kwargs["measurement"], kwargs["component"],
+      limit=kwargs["limit"], aggregation=kwargs["aggregation"]
+    )["series"][0]
+    dataValues = data["values"]
+    if self._verbose:
+      print "Pulled {} data points from InfluxDB...".format(len(dataValues))
+    results = []
+    for point in dataValues:
+      results.append(self._runOneDataPoint(
+        self._hitcClient, guid, iso8601.parse_date(point[0]), point[1]
+      ))
+    print "Loaded %i data points into model '%s'." % (len(results), guid)
+
+
+  def _runOneDataPoint(self, hitcClient, modelId, inputTime, value):
+    # Get date from string if it is a string.
+    if isinstance(inputTime, basestring):
+      timeObj = datetime.strptime(inputTime, DATE_FORMAT)
+    # Otherwise we assume it is a date object.
+    else:
+      timeObj = inputTime
+
+    timestamp = int(time.mktime(timeObj.timetuple()))
+
+    dataRow = {
+      "c0": timestamp,
+      "c1": value
+    }
+
+    if self._verbose:
+      print dataRow
+
+    # There is only one value in the result list, so pop() it off.
+    return hitcClient.get_model(modelId).run(dataRow).pop()
+
+
 
 class sensors:
 
 
-  def __init__(self, hitcClient, sensorClient):
+  def __init__(self, hitcClient, sensorClient, verbose=False):
     self._hitcClient = hitcClient
     self._sensorClient = sensorClient
+    self._verbose = verbose
 
 
   def data(self, **kwargs):
@@ -213,10 +266,11 @@ def getHitcClient():
 def runAction(subject, action, **kwargs):
   hitcClient = getHitcClient()
   database = os.environ["INFLUX_DB"]
+  verbose = kwargs["verbose"]
   sensorClient = SensorClient(
-    database, verbose=kwargs["verbose"]
+    database, verbose=verbose
   )
-  subjectType = get_class(subject)(hitcClient, sensorClient)
+  subjectType = get_class(subject)(hitcClient, sensorClient, verbose=verbose)
   actionFunction = getattr(subjectType, action)
   # print "\n* * *\n"
   actionFunction(**kwargs)

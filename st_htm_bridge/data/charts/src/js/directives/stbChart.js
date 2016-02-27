@@ -277,7 +277,7 @@ angular.module('app').directive('stbChart', ['$http', 'stbUtils', 'CONFIG', func
           options.params.since = getSince(scope.view.since);
         }
         if (scope.view.aggregateNumber !== null && scope.view.aggregateUnit !== null) {
-          options.params.aggregate = scope.view.aggregateNumber.toString() + scope.view.aggregateUnit;
+          options.params.aggregation = scope.view.aggregateNumber.toString() + scope.view.aggregateUnit;
         }
         $http.get(dataUrl, options).then(function(sensorData) {
           // console.log(sensorData);
