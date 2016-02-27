@@ -61,12 +61,16 @@ class SensorData:
 
   def GET(self, measurement, component):
     query = web.input(limit=None, since=None, aggregate=None)
+    since = query.since
+    if since is not None:
+      # InfluxDB expects a 19-digit timestamp.
+      since = int(query.since) * 1000000000
     sensor = sensorClient.getSensorData(
       measurement,
       component,
       limit=query.limit,
-      since=query.since,
-      aggregate=query.aggregate
+      since=since,
+      aggregation=query.aggregate
     )
     return json.dumps(sensor)
 

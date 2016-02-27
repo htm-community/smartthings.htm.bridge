@@ -43,7 +43,7 @@ The commands below deal with HTM models used to analyze the SmartThings sensor d
 #### Create a model
 
     st_htm_bridge_cli models:create \
-        --guid=<guid> \
+        --guid=<guid> [optional] \
         --paramPath=<path-to-params-json>
 
 #### List models
@@ -61,7 +61,14 @@ The commands below deal with HTM models used to analyze the SmartThings sensor d
 
 #### Feed a model data
 
-> COMING SOON
+The `--aggregation` option can be a time string like `1s`, `5m`, `2w`, etc.
+
+    st_htm_bridge_cli models:load \
+        --guid=<guid>
+        --component=<component> \
+        --measurement=<measurement> \
+        --aggregation=<aggregation> [optional]
+        --limit=<limit> [optional]
 
 Functionality here should be able to choose aggregation options for InfluxDB and feed data directly into a newly created HTM model or an existing model.
 
@@ -78,14 +85,14 @@ The commands below query raw InfluxDB sensor data from SmartThings.
     st_htm_bridge_cli sensors:data \
         --component=<component> \
         --measurement=<measurement> \
-        --limit=<limit>
+        --limit=<limit> [optional]
 
 #### List HTM inferences available for a sensor
 
     st_htm_bridge_cli sensors:inference \
         --component=<component> \
         --measurement=<measurement> \
-        --limit=<limit>
+        --limit=<limit> [optional]
 
 #### Transfer sensor data from one DB to another
 
@@ -94,4 +101,4 @@ The commands below query raw InfluxDB sensor data from SmartThings.
         --to=<toDb> \
         --measurement=<measurement> \
         --component=<component> \
-        --limit=<limit>
+        --limit=<limit> [optional]

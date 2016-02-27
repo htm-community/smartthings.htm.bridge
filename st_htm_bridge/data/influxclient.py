@@ -17,54 +17,6 @@ DEFAULT_SSL = "INFLUX_SSL" in os.environ \
               and os.environ["INFLUX_SSL"].lower() != "false"
 
 
-def zipSensorAndInferenceData(sensorData, inferenceData):
-
-  # If inferenceData is empty, just return sensorData
-  if isinstance(inferenceData, list):
-    # Just return the sensor data and warn.
-    print "WARNING: No HTM inference data available. Only returning sensor data."
-    return sensorData
-
-  sensorSeries = sensorData["series"][0]
-  inferenceSeries = inferenceData["series"][0]
-
-  sensorValues = sensorSeries["values"]
-  sensorColumns = sensorSeries["columns"]
-  inferenceValues = inferenceSeries["values"]
-  inferenceColumns = inferenceSeries["columns"]
-
-  columnsOut = sensorColumns + inferenceColumns[1:]
-  valuesOut = []
-  sensorStep = 0
-  inferenceStep = 0
-
-  # This loop matches HTM inferences with sensor data of the same timestamp.
-  # Progresses through all sensor data and zips inferences into a new output
-  # list.
-  for sensorValue in sensorValues:
-    sensorTime = iso8601.parse_date(sensorValue[sensorColumns.index("time")])
-    inferenceTime = iso8601.parse_date(inferenceValues[inferenceStep][sensorColumns.index("time")])
-    while inferenceTime < sensorTime:
-      inferenceStep += 1
-      inferenceTime = iso8601.parse_date(inferenceValues[inferenceStep][sensorColumns.index("time")])
-    if sensorTime == inferenceTime:
-      valueOut = sensorValue + inferenceValues[inferenceStep][1:]
-    else:
-      valueOut = sensorValue + [None, None]
-    valuesOut.append(valueOut)
-    sensorStep += 1
-
-  dataOut = {
-    "series": [{
-      "values": valuesOut,
-      "name": sensorSeries["name"],
-      "columns": columnsOut,
-      "tags": sensorSeries["tags"]
-    }]
-  }
-
-  return dataOut
-
 
 def influxCopyPossible(fromMeta, toMeta):
   # Name and tags must be the same.
@@ -164,21 +116,76 @@ class SensorClient(object):
     self._client.write_points(payload)
 
 
-  # def saveResult(self, htmResult, point):
-  #   timezone = "unknown"
-  #   if "timezone" in point:
-  #     timezone = point["timezone"]
-  #   self.saveSensorData(point)
-  #   if htmResult:
-  #     self.saveHtmInference(
-  #       htmResult, point["component"], point["stream"], point["time"], timezone
-  #     )
+  def zipSensorAndInferenceData(self, sensorData, inferenceData):
+
+    # If inferenceData is empty, just return sensorData
+    if isinstance(inferenceData, list):
+      # Just return the sensor data and warn.
+      if self._verbose:
+        print("WARNING: No HTM inference data available. "
+              "Only returning sensor data.")
+      return sensorData
+
+    sensorSeries = sensorData["series"][0]
+    inferenceSeries = inferenceData["series"][0]
+
+    sensorValues = sensorSeries["values"]
+    sensorColumns = sensorSeries["columns"]
+    inferenceValues = inferenceSeries["values"]
+    inferenceColumns = inferenceSeries["columns"]
+
+    columnsOut = sensorColumns + inferenceColumns[1:]
+    valuesOut = []
+    sensorStep = 0
+    inferenceStep = 0
+
+    # This loop matches HTM inferences with sensor data of the same timestamp.
+    # Progresses through all sensor data and zips inferences into a new output
+    # list.
+    for sensorValue in sensorValues:
+      sensorTime = iso8601.parse_date(sensorValue[sensorColumns.index("time")])
+      inferenceTime = iso8601.parse_date(
+        inferenceValues[inferenceStep][sensorColumns.index("time")]
+      )
+      while inferenceTime < sensorTime:
+        inferenceStep += 1
+        inferenceTime = iso8601.parse_date(
+          inferenceValues[inferenceStep][sensorColumns.index("time")]
+        )
+      if sensorTime == inferenceTime:
+        valueOut = sensorValue + inferenceValues[inferenceStep][1:]
+      else:
+        valueOut = sensorValue + [None, None]
+      valuesOut.append(valueOut)
+      sensorStep += 1
+
+    dataOut = {
+      "series": [{
+        "values": valuesOut,
+        "name": sensorSeries["name"],
+        "columns": columnsOut,
+        "tags": sensorSeries["tags"]
+      }]
+    }
+
+    return dataOut
 
 
   def listSensors(self):
     allSensors = self._client.get_list_series()
-    sensorsOnly = (s for s in allSensors if not s["name"].endswith("_inference"))
+    sensorsOnly = (
+      s for s in allSensors if not s["name"].endswith("_inference")
+    )
     return sensorsOnly
+
+
+  def getEarliestTimestamp(self, measurement, component):
+    query = ("SELECT * FROM {0} WHERE component = '{1}' "
+             "ORDER BY time LIMIT 1").format(measurement, component)
+    if self._verbose:
+      print query
+    response = self._client.query(query)
+    return response.raw["series"][0]["values"][0][0]
 
 
   def queryMeasurement(self,
@@ -186,30 +193,35 @@ class SensorClient(object):
                        component,
                        limit=None,
                        since=None,
-                       aggregate=None,
+                       aggregation=None,
                        database=None):
     toSelect = "value"
 
-    if aggregate is not None:
+    if aggregation is not None:
       toSelect = "MEAN(value)"
 
     query = "SELECT {0} FROM {1} WHERE component = '{2}'"\
       .format(toSelect, measurement, component)
 
     if since is not None:
-      query += " AND time > {0}s".format(since)
+      # since might be an integer timestamp or a time string. If it is a time
+      # string, we'll just put single quotes around it to play nice with Influx.
+      if isinstance(since, basestring):
+        since = "'{}'".format(since)
+      query += " AND time > {0}".format(since)
 
-    if aggregate is None:
+    if aggregation is None:
       query += " GROUP BY *"
     else:
-      query += " GROUP BY time({0}) fill(previous)".format(aggregate)
+      query += " GROUP BY time({0}) fill(previous)".format(aggregation)
 
     query += " ORDER BY time DESC"
 
     if limit is not None:
       query += " LIMIT {0}".format(limit)
 
-    print query
+    if self._verbose:
+      print query
 
     response = self._client.query(query, database=database)
 
@@ -218,17 +230,28 @@ class SensorClient(object):
       return []
 
     data = response.raw
-    # Because of the descending order in the query, we want to reverse the data so
-    # it is actually in ascending order. The descending order was really just to get
-    # the latest data.
+    # Because of the descending order in the query, we want to reverse the data
+    # so it is actually in ascending order. The descending order was really just
+    # to get the latest data.
     data["series"][0]["values"] = list(reversed(data["series"][0]["values"]))
     return data
 
 
-  def getSensorData(self, measurement, component, limit=None, since=None, aggregate=None):
-    sensorData = self.queryMeasurement(measurement, component, limit=limit, since=since, aggregate=aggregate)
-    inferenceData = self.queryMeasurement(measurement + "_inference", component, limit=limit, since=since)
-    return zipSensorAndInferenceData(sensorData, inferenceData)
+  def getSensorData(self,
+                    measurement,
+                    component,
+                    limit=None,
+                    since=None,
+                    aggregation=None):
+    if since is None:
+      since = self.getEarliestTimestamp(measurement, component)
+    sensorData = self.queryMeasurement(
+      measurement, component, limit=limit, since=since, aggregation=aggregation
+    )
+    inferenceData = self.queryMeasurement(
+      measurement + "_inference", component, limit=limit, since=since
+    )
+    return self.zipSensorAndInferenceData(sensorData, inferenceData)
 
 
   def transfer(self, **kwargs):
@@ -241,7 +264,8 @@ class SensorClient(object):
       measurement, component, limit=1, database=toDb
     )
     if isinstance(rawData, list):
-      raise Exception("Cannot transfer data because destination DB schema does not match source DB schema!")
+      raise Exception("Cannot transfer data because destination DB schema does "
+                      "not match source DB schema!")
     toSignature = rawData["series"][0]
     fromData = self.queryMeasurement(
       measurement, component, limit=limit, database=fromDb
@@ -252,7 +276,8 @@ class SensorClient(object):
         from pprint import pprint
         pprint(fromData)
         pprint(toSignature)
-      raise Exception("Cannot transfer data because destination DB schema does not match source DB schema!")
+      raise Exception("Cannot transfer data because destination DB schema does "
+                      "not match source DB schema!")
 
     payload = []
 
@@ -267,6 +292,3 @@ class SensorClient(object):
       })
 
     self._client.write_points(payload)
-
-
-
