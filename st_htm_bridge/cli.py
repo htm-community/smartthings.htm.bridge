@@ -155,18 +155,23 @@ class models:
     dataValues = data["values"]
     if self._verbose:
       print "Pulled {} data points from InfluxDB...".format(len(dataValues))
-    results = []
+    count = 0
     for point in dataValues:
       pointTime = point[0]
       htmResults = self._runOneDataPoint(
         self._hitcClient, guid, iso8601.parse_date(pointTime), point[1]
       )
-      results.append({
+      result = [{
         "results": htmResults,
         "time": pointTime
-      })
-    self._sensorClient.saveHtmResults(measurement, component, results)
-    print "Loaded %i data points into model '%s'." % (len(results), guid)
+      }]
+      self._sensorClient.saveHtmResults(measurement, component, result)
+      count += 1
+      if self._verbose and count % 50 == 0:
+        print "Loaded {} data points into model '{}' so far..." \
+          .format(count, guid)
+    if self._verbose:
+      print "Loaded {} data points into model '{}'.".format(count, guid)
 
 
   def _runOneDataPoint(self, hitcClient, modelId, inputTime, value):
