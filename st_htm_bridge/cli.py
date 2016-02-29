@@ -240,9 +240,18 @@ class sensors:
 
   def list(self, **kwargs):
     for s in self._sensorClient.listSensors():
-      name = s["name"]
-      if not name.endswith("_inference"):
-        print "component: %s\tmeasurement: %s" % (s["tags"][0]["component"], name)
+      measurement = s["name"]
+      print "{} sensors:".format(measurement)
+      description = "---------------------\n"
+      for tagSet in s["tags"]:
+        tagNames = tagSet.keys()
+        tagNames.sort()
+        for key in tagNames:
+          val = tagSet[key]
+          if key != "_key" and val != "":
+            description += "\t{0}: {1}".format(key, val)
+        description += "\n"
+      print description
 
 
   def delete(self, **kwargs):
