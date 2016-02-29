@@ -191,11 +191,13 @@ class SensorClient(object):
 
 
   def listSensors(self):
-    allSensors = self._client.get_list_series()
-    sensorsOnly = (
-      s for s in allSensors if not s["name"].endswith("_inference")
-    )
-    return sensorsOnly
+    sensors = self._client.get_list_series()
+    if not self._verbose:
+      # Strip out inference readings unless verbose.
+      sensors = (
+        s for s in sensors if not s["name"].endswith("_inference")
+      )
+    return sensors
 
 
   def getEarliestTimestamp(self, measurement, component):
