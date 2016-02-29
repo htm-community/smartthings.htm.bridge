@@ -21,6 +21,7 @@ import time
 from datetime import datetime
 from optparse import OptionParser
 
+import requests
 import iso8601
 from hitcpy import HITC
 
@@ -298,7 +299,12 @@ def getHitcClient():
   hitcClient = None
   hitcUrl = getHitcUrl()
   if hitcUrl is not None and len(hitcUrl) > 0:
-    hitcClient = HITC(hitcUrl)
+    try:
+      hitcClient = HITC(hitcUrl)
+    except requests.exceptions.ConnectionError:
+      print "WARNING: No HITC is available at {}".format(hitcUrl)
+      print "         No HTM functions will be available."
+
   return hitcClient
 
 
