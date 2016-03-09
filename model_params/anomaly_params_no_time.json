@@ -21,12 +21,7 @@
                 "verbosity": 0,
                 "encoders": {
                     "c0_dayOfWeek": null,
-                    "c0_timeOfDay": {
-                        "type": "DateEncoder",
-                        "timeOfDay": [21, 9.4912233474773693],
-                        "fieldname": "c0",
-                        "name": "c0"
-                    },
+                    "c0_timeOfDay": null,
                     "c1": {
                         "name": "c1",
                         "fieldname": "c1",
