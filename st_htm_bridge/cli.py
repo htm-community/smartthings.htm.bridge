@@ -24,8 +24,7 @@ from optparse import OptionParser
 import requests
 import iso8601
 from hitcpy import HITC
-
-from data import SensorClient
+from influxhtm import InfluxHtmClient
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
@@ -67,21 +66,31 @@ def createOptionsParser():
     "-l",
     "--limit",
     dest="limit",
+    default=None,
     help="Sensor data limit when fetching.")
+  parser.add_option(
+    "-s",
+    "--since",
+    dest="since",
+    default=None,
+    help="Sensor data lower time bound.")
   parser.add_option(
     "-f",
     "--from",
     dest="from",
+    default=None,
     help="InfluxDB database name.")
   parser.add_option(
     "-t",
     "--to",
     dest="to",
+    default=None,
     help="InfluxDB database name.")
   parser.add_option(
     "-a",
     "--aggregation",
     dest="aggregation",
+    default=None,
     help="Time period for aggregation (1s, 1m, 1d, 1w, etc.)")
 
   return parser
@@ -91,34 +100,52 @@ def createOptionsParser():
 class models:
 
 
-  def __init__(self, hitcClient, sensorClient, verbose=False):
+  def __init__(self, hitcClient, ihtmClient, verbose=False):
     self._hitcClient = hitcClient
-    self._sensorClient = sensorClient
+    self._ihtmClient = ihtmClient
     self._verbose = verbose
 
 
   def list(self, **kwargs):
+    print "HITC Models:"
     models = self._hitcClient.get_all_models()
     if len(models) < 1:
-      print "NO MODELS"
+      print "None"
     else:
-      print "CURRENT MODELS:"
       for m in models:
-        print " - %s" % m.guid
+        print " - {}models/{}".format(m.url, m.guid)
+
+    print "\nInfluxDB Stored Models:"
+    models = self._ihtmClient.getHtmModels()
+    if len(models) < 1:
+      print "None"
+    else:
+      for m in models:
+        print m
 
 
   def create(self, **kwargs):
-    validateKwargs(["paramPath"], kwargs)
+    validateKwargs(["measurement", "component", "paramPath"], kwargs)
+    measurement = kwargs["measurement"]
+    component = kwargs["component"]
     paramPath = kwargs["paramPath"]
+    sensor = self._ihtmClient.getSensor(
+      measurement=measurement, component=component
+    )
+    if sensor is None:
+      raise ValueError(
+        "No sensor exists for measurement={} & component={}"
+          .format(measurement, component)
+      )
     with(open(paramPath, "r")) as paramFile:
       params = json.loads(paramFile.read())
-      if "guid" in kwargs and kwargs["guid"] is not None:
-        params["guid"] = kwargs["guid"]
-      try:
-        model = self._hitcClient.create_model(params)
-        print "Created model '%s'" % model.guid
-      except KeyError:
-        print "Model with id '%s' already exists." % kwargs["guid"]
+    params["guid"] = "{}_{}_model".format(component, measurement)
+    try:
+      model = self._hitcClient.create_model(params)
+      print model
+      print "Created HITC model '%s'" % model.guid
+    except KeyError:
+      print "Model with id '%s' already exists." % params["guid"]
 
 
   def delete(self, **kwargs):
@@ -134,7 +161,7 @@ class models:
       if not measurement.endswith("_inference"):
         measurement = "{}_inference".format(measurement)
       sensors(
-        self._hitcClient, self._sensorClient, self._verbose
+        self._hitcClient, self._ihtmClient, self._verbose
       ).delete(measurement=measurement, component=kwargs["component"])
 
 
@@ -145,28 +172,43 @@ class models:
 
 
   def load(self, **kwargs):
-    validateKwargs(["measurement", "component", "guid"], kwargs)
-    guid = kwargs["guid"]
-    measurement = kwargs["measurement"]
-    component = kwargs["component"]
-    data = self._sensorClient.getSensorData(
-      measurement, component,
-      limit=kwargs["limit"], aggregation=kwargs["aggregation"]
-    )["series"][0]
+    validateKwargs(["measurement", "component"], kwargs)
+    measurement = kwargs.pop("measurement")
+    component = kwargs.pop("component")
+    guid = "{}_{}_model".format(component, measurement)
+
+    # Get the HITC model
+    hitcModel = self._hitcClient.get_model(guid)
+    if hitcModel is None:
+      raise ValueError("You must create a model first.")
+
+    # Get the influxhtm Sensor interface
+    sensor = self._ihtmClient.getSensor(
+      measurement=measurement, component=component
+    )
+
+    # Get the data!
+    data = sensor.getData(**kwargs)["series"][0]
     dataValues = data["values"]
     if self._verbose:
       print "Pulled {} data points from InfluxDB...".format(len(dataValues))
+
+    # Get or create an HtmSensorModel so we can write HTM results.
+    htmSensorModel = sensor.getHtmModel()
+    if htmSensorModel is None:
+      htmSensorModel = sensor.createHtmModel(
+        "{}models/{}".format(hitcModel.url, hitcModel.guid)
+      )
+
     count = 0
     for point in dataValues:
       pointTime = point[0]
-      htmResults = self._runOneDataPoint(
+      results = self._runOneDataPoint(
         self._hitcClient, guid, iso8601.parse_date(pointTime), point[1]
       )
-      result = [{
-        "results": htmResults,
-        "time": pointTime
-      }]
-      self._sensorClient.saveHtmResults(measurement, component, result)
+      # Write the model results.
+      htmSensorModel.writeResult(pointTime, results)
+
       count += 1
       if self._verbose and count % 50 == 0:
         print "Loaded {} data points into model '{}' so far..." \
@@ -201,17 +243,20 @@ class models:
 class sensors:
 
 
-  def __init__(self, hitcClient, sensorClient, verbose=False):
+  def __init__(self, hitcClient, ihtmClient, verbose=False):
     self._hitcClient = hitcClient
-    self._sensorClient = sensorClient
+    self._ihtmClient = ihtmClient
     self._verbose = verbose
 
 
   def data(self, **kwargs):
     validateKwargs(["measurement", "component"], kwargs)
-    rawData = self._sensorClient.queryMeasurement(
-      kwargs["measurement"], kwargs["component"], limit=kwargs["limit"]
+    sensor = self._ihtmClient.getSensor(
+      measurement=kwargs.pop("measurement"),
+      component=kwargs.pop("component")
     )
+    rawData = sensor.getData(**kwargs)
+
     if len(rawData) == 0:
       print "No data."
     else:
@@ -239,36 +284,10 @@ class sensors:
         print(v)
 
 
+
   def list(self, **kwargs):
-    for s in self._sensorClient.listSensors():
-      measurement = s["name"]
-      print "{} sensors:".format(measurement)
-      description = "---------------------\n"
-      for tagSet in s["tags"]:
-        tagNames = tagSet.keys()
-        tagNames.sort()
-        for key in tagNames:
-          val = tagSet[key]
-          if key != "_key" and val != "":
-            description += "\t{0}: {1}".format(key, val)
-        description += "\n"
-      print description
-
-
-  def delete(self, **kwargs):
-    validateKwargs(["measurement", "component"], kwargs)
-    if self._verbose:
-      print "Deleting data for {}:{}".format(
-        kwargs["measurement"], kwargs["component"]
-      )
-    self._sensorClient.delete(kwargs["measurement"], kwargs["component"])
-
-
-  def transfer(self, **kwargs):
-    validateKwargs([
-      "from", "to", "component", "measurement"
-    ], kwargs)
-    self._sensorClient.transfer(**kwargs)
+    for s in self._ihtmClient.getSensors():
+      print s
 
 
 # Util functions
@@ -312,10 +331,14 @@ def runAction(subject, action, **kwargs):
   hitcClient = getHitcClient()
   database = os.environ["INFLUX_DB"]
   verbose = kwargs["verbose"]
-  sensorClient = SensorClient(
+  ihtmClient = InfluxHtmClient(
     database, verbose=verbose
   )
-  subjectType = get_class(subject)(hitcClient, sensorClient, verbose=verbose)
+  try:
+    subjectType = get_class(subject)(hitcClient, ihtmClient, verbose=verbose)
+  except KeyError as error:
+    print "Incorrect subject '{}'".format(subject)
+    raise error
   actionFunction = getattr(subjectType, action)
   # print "\n* * *\n"
   actionFunction(**kwargs)
@@ -328,3 +351,7 @@ def main():
     raise ValueError("Please provide a command.")
   subject, action = extractIntent(args[0])
   runAction(subject, action, **vars(options))
+
+
+if __name__ == "__main__":
+  main()

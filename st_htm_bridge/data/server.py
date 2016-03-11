@@ -3,12 +3,12 @@ import json
 
 import web
 
-from influxclient import SensorClient
+from influxhtm import InfluxHtmClient
 
 INFLUX_DATABASE = os.environ["INFLUX_DB"]
 DEFAULT_PORT = 8080
 
-sensorClient = SensorClient(INFLUX_DATABASE, verbose=True)
+ihtmClient = InfluxHtmClient(INFLUX_DATABASE, verbose=True)
 
 
 #################
@@ -21,15 +21,6 @@ urls = (
   '/_data/sensors/?', 'SensorList',
   '/_data/sensor/(.+)/(.+)/?', 'SensorData'
 )
-
-
-def getSensorIds(sensors):
-  sensorIds = []
-  for sensor in sensors:
-    name = sensor["name"]
-    for tag in sensor["tags"]:
-      sensorIds.append(name + "/" + tag["component"])
-  return sorted(list(set(sensorIds)))
 
 
 class Index:
@@ -47,32 +38,47 @@ class Index:
     Handles POST data calls to "/", which saves off sensor data.
     """
     data = json.loads(web.data())
-    sensorClient.saveSensorData(data)
+    # {u'component': u'Keurig', u'stream': u'power', u'value': 6642, u'time': u'2016-03-10 22:24:34.000'}
+    measurement = data["stream"]
+    component = data["component"]
+    sensor = ihtmClient.getSensor(
+      measurement=measurement, component=component
+    )
+    if sensor is None:
+      sensor = ihtmClient.createSensor(
+        measurement=measurement, component=component
+      )
+    sensor.write({
+      "time": data["time"],
+      "value": data["value"]
+    })
     return json.dumps({"result": "success"})
 
 
 class SensorList:
 
   def GET(self):
-    return json.dumps(getSensorIds(sensorClient.listSensors()))
+    sensorIds = ["{}/{}".format(s.getMeasurement(), s.getComponent())
+     for s in ihtmClient.getSensors()]
+    return json.dumps(sensorIds)
 
 
 class SensorData:
 
   def GET(self, measurement, component):
     query = web.input(limit=None, since=None, aggregate=None)
+    print query
     since = query.since
     if since is not None:
       # InfluxDB expects a 19-digit timestamp.
       since = int(query.since) * 1000000000
-    sensor = sensorClient.getCombinedSensorData(
-      measurement,
-      component,
+    sensor = ihtmClient.getSensor(measurement=measurement, component=component)
+    data = sensor.getCombinedSensorData(
       limit=query.limit,
       since=since,
       aggregation=query.aggregate
     )
-    return json.dumps(sensor)
+    return json.dumps(data)
 
 
 ##############
