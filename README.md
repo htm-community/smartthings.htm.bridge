@@ -23,7 +23,7 @@ INFLUX_PORT=8086
 INFLUX_USER=username
 INFLUX_PASS=password
 INFLUX_DB=database_name
-INFLUX_SSL=1
+INFLUX_SSL=1 # whether to use SSL or not when connecting
 ```
 
 ## To Run Web Server
