@@ -58,8 +58,9 @@ class Index:
 class SensorList:
 
   def GET(self):
-    sensorIds = ["{}/{}".format(s.getMeasurement(), s.getComponent())
-     for s in ihtmClient.getSensors()]
+    sensorIds = [
+      "{}/{}".format(s.getMeasurement(), s.getComponent())
+      for s in ihtmClient.getSensors()]
     return json.dumps(sensorIds)
 
 
