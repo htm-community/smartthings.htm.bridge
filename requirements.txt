@@ -1,5 +1,5 @@
 web.py==0.37
-influxhtm==0.0.2
+influxhtm==0.0.3
 hitcpy==0.1.1
 iso8601==0.1.11
 requests==2.3.0
